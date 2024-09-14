@@ -4,8 +4,8 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 from lietorch import SE3
-from modules.corr import CorrBlock, AltCorrBlock
-import geom.projective_ops as pops
+from .modules.corr import CorrBlock, AltCorrBlock
+from .geom import projective_ops as pops
 
 
 class FactorGraph:
