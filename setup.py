@@ -1,5 +1,5 @@
 from setuptools import setup
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+from cyborg.utilities.portable_extension import PortableExtension,BuildExtension,cuda_enabled
 
 import os.path as osp
 ROOT = osp.dirname(osp.abspath(__file__))
@@ -8,11 +8,11 @@ setup(
     name='droid_slam',
     packages=["droid_slam"],
     ext_modules=[
-        CUDAExtension('droid_backends',
+        PortableExtension('droid_backends',
             include_dirs=[
               "/usr/include/eigen3"],
             sources=[
-                'src/droid.cpp', 
+                'src/droid.cpp',
                 'src/droid_kernels.cu',
                 'src/correlation_kernels.cu',
                 'src/altcorr_kernel.cu',
@@ -28,6 +28,6 @@ setup(
                     '-gencode=arch=compute_86,code=sm_86',
                 ]
             }),
-    ],
+    ] if cuda_enabled() else [],
     cmdclass={ 'build_ext' : BuildExtension }
 )

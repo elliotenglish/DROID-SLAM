@@ -1,0 +1,8 @@
+[build-system]
+requires = [
+  "pybind11",
+  "setuptools",
+  "torch",
+  "cyborg-utilities @ file://../cyborg-utilities/",
+  "numpy<2.0"
+]
