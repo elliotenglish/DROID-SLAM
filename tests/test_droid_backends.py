@@ -3,15 +3,23 @@ import droid_backends
 import numpy as np
 
 def test_corr_index_forward():
-  h1=30
-  w1=40
+  h1=3
+  w1=4
   h2=h1
   w2=w1
   b=1
 
-  radius=3
-  volume=torch.tensor(np.ndarray([b,h1,w1,h2,w2],dtype=np.float32))
-  coords=torch.tensor(np.ndarray([b,2,h1,w1],dtype=np.float32))
+  gen=np.random.default_rng(5432)
+
+  radius=0
+  volume=torch.tensor(gen.uniform(-1,1,size=[b,h1,w1,h2,w2]).astype(np.float32))
+  coords=torch.tensor(np.concat(
+    [
+      gen.uniform(0,h2-1,size=[b,1,h1,w1]).astype(np.float32),
+      gen.uniform(0,w2-1,size=[b,1,h1,w1]).astype(np.float32)
+    ],
+    axis=1))
+  coords=coords*0+1
   #corr=torch.tensor(np.ndarray([b,2*radius+1,2*radius+1,h1,w1]))
 
   # volume is expected to be BxH1xW1xH2xW2, where the values are the correlation values.
@@ -20,6 +28,10 @@ def test_corr_index_forward():
   corr=droid_backends.corr_index_forward(volume,coords,radius)
   corr=np.array(corr)
 
+  print("volume",volume.shape,volume.dtype,volume)
+  print("coords",coords.shape,coords.dtype,coords)
+  print("radius",radius)
+  print(corr)
   print(corr.shape,corr.dtype)
 
 if __name__=="__main__":
