@@ -33,15 +33,21 @@ __global__ void corr_index_forward_kernel(
   const int h2 = volume.size(3);
   const int w2 = volume.size(4);
 
+  printf("blah x=%d y=%d w1=%d h1=%d wb=%d\n",x,y,w1,h1,within_bounds(y, x, h1, w1));
+
   if (!within_bounds(y, x, h1, w1)) {
     return;
   }
+
+  printf("test\n");
 
   float x0 = coords[n][0][y][x];
   float y0 = coords[n][1][y][x];
 
   float dx = x0 - floor(x0);
   float dy = y0 - floor(y0);
+
+  printf("x=%d y=%d x0=%g y0=%g dx=%g dy=%g\n",x,y,x0,x0,dx,dy);
 
   int rd = 2*r + 1;
   for (int i=0; i<rd+1; i++) {
@@ -51,6 +57,7 @@ __global__ void corr_index_forward_kernel(
 
       if (within_bounds(y1, x1, h2, w2)) {
         scalar_t s = volume[n][y][x][y1][x1];
+        printf("s=%g\n",s);
 
         if (i > 0 && j > 0)
           corr[n][i-1][j-1][y][x] += s * scalar_t(dx * dy);

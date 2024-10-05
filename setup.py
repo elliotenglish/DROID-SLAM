@@ -18,8 +18,8 @@ setup(
                 'src/altcorr_kernel.cu',
             ],
             extra_compile_args={
-                'cxx': ['-O3'],
-                'nvcc': ['-O3',
+                'cxx': ['-g',"-O0"],
+                'nvcc': ['-g',"-O0",
                     '-gencode=arch=compute_60,code=sm_60',
                     '-gencode=arch=compute_61,code=sm_61',
                     '-gencode=arch=compute_70,code=sm_70',
