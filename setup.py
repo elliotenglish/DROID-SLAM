@@ -13,8 +13,10 @@ setup(
               "/usr/include/eigen3"],
             sources=[
                 'src/droid.cpp',
-                'src/droid_kernels.cu',
-                'src/correlation_kernels.cu',
+                'src/droid_kernels_cpu.cc',
+                'src/droid_kernels_cuda.cu',
+                'src/correlation_kernels_cpu.cc',
+                'src/correlation_kernels_cuda.cu',
                 'src/altcorr_kernel.cu',
             ],
             extra_compile_args={

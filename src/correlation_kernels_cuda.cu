@@ -10,6 +10,7 @@
 #include <ATen/NativeFunctions.h>
 #include <ATen/Parallel.h>
 
+#include "correlation_kernels_cuda.h"
 #include "cuda_utilities.h"
 
 #define BLOCK 16
@@ -48,8 +49,7 @@ __global__ void corr_index_forward_kernel(
   // printf("test\n");
   // printf("test3\n");
 
-  float xyz=coords[0][0][0][0];
-
+  // float xyz=coords[0][0][0][0];
   // printf("test4 n=%d y=%d x=%d\n",n,y,x);
 
   float x0 = coords[n][0][y][x];

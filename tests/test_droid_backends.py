@@ -100,5 +100,8 @@ def test_corr_index_forward():
 
   print("corr",corr.shape,corr.dtype,corr)
 
+test_projected_transform_kernel():
+  
+
 if __name__=="__main__":
   test_corr_index_forward()
