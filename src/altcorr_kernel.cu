@@ -11,6 +11,8 @@
 #include <ATen/cuda/CUDAApplyUtils.cuh>
 #include <ATen/native/cuda/KernelUtils.cuh>
 
+#include "cuda_utilities.h"
+
 
 
 #define BLOCK_H 4
@@ -315,6 +317,9 @@ std::vector<torch::Tensor> altcorr_cuda_forward(
         radius);
   }));
 
+  cudaDeviceSynchronize();
+  cudaCheckError();
+
   return {corr};
 }
 
@@ -351,6 +356,9 @@ std::vector<torch::Tensor> altcorr_cuda_backward(
     fmap2_grad.packed_accessor32<float,4,torch::RestrictPtrTraits>(),
     coords_grad.packed_accessor32<float,5,torch::RestrictPtrTraits>(),
     radius);
+
+  cudaDeviceSynchronize();
+  cudaCheckError();
 
   return {fmap1_grad, fmap2_grad, coords_grad};
 }

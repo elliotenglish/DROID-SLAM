@@ -10,6 +10,8 @@
 #include <ATen/NativeFunctions.h>
 #include <ATen/Parallel.h>
 
+#include "cuda_utilities.h"
+
 #define BLOCK 16
 
 __forceinline__ __device__ bool within_bounds(int h, int w, int H, int W) {
@@ -33,7 +35,7 @@ __global__ void corr_index_forward_kernel(
   const int h2 = volume.size(3);
   const int w2 = volume.size(4);
 
-  printf("blah x=%d y=%d w1=%d h1=%d wb=%d\n",x,y,w1,h1,within_bounds(y, x, h1, w1));
+  printf("blah n=%d x=%d y=%d w1=%d h1=%d wb=%d\n",n,x,y,w1,h1,within_bounds(y, x, h1, w1));
 
   if (!within_bounds(y, x, h1, w1)) {
     return;
@@ -41,13 +43,19 @@ __global__ void corr_index_forward_kernel(
 
   printf("test\n");
 
+  printf("test3\n");
+
   float x0 = coords[n][0][y][x];
   float y0 = coords[n][1][y][x];
+
+  printf("test2\n");
 
   float dx = x0 - floor(x0);
   float dy = y0 - floor(y0);
 
-  printf("x=%d y=%d x0=%g y0=%g dx=%g dy=%g\n",x,y,x0,x0,dx,dy);
+  printf("test1\n");
+
+  printf("x=%d y=%d x0=%g y0=%g dx=%g dy=%g\n",x,y,x0,y0,dx,dy);
 
   int rd = 2*r + 1;
   for (int i=0; i<rd+1; i++) {
@@ -157,8 +165,10 @@ std::vector<torch::Tensor> corr_index_cuda_forward(
       radius);
    }));
 
-  return {corr};
+  cudaDeviceSynchronize();
+  cudaCheckError();
 
+  return {corr};
 }
 
 std::vector<torch::Tensor> corr_index_cuda_backward(
@@ -187,6 +197,9 @@ std::vector<torch::Tensor> corr_index_cuda_backward(
       volume_grad.packed_accessor32<scalar_t,5,torch::RestrictPtrTraits>(),
       radius);
    }));
+
+  cudaDeviceSynchronize();
+  cudaCheckError();
 
   return {volume_grad};
 }
