@@ -1,21 +1,12 @@
 #include <torch/extension.h>
 #include <vector>
 
-#include <droid_kernels_cpu.h>
-#include <droid_kernels_cuda.h>
-
-// std::vector<torch::Tensor> altcorr_cuda_forward(
-//   torch::Tensor fmap1,
-//   torch::Tensor fmap2,
-//   torch::Tensor coords,
-//   int radius);
-
-// std::vector<torch::Tensor> altcorr_cuda_backward(
-//   torch::Tensor fmap1,
-//   torch::Tensor fmap2,
-//   torch::Tensor coords,
-//   torch::Tensor corr_grad,
-//   int radius);
+#include "droid_kernels_cpu.h"
+#include "droid_kernels_cuda.h"
+#include "correlation_kernels_cpu.h"
+#include "correlation_kernels_cuda.h"
+#include "altcorr_kernel.h"
+#include "cuda_utilities.h"
 
 
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
@@ -48,12 +39,12 @@ std::vector<torch::Tensor> ba(
   CHECK_INPUT(ii);
   CHECK_INPUT(jj);
 
-  if (volume.device().type() == torch::DeviceType::CPU) {
+  if (targets.device().type() == torch::DeviceType::CPU) {
     return ba_cpu(poses, disps, intrinsics, disps_sens, targets, weights,
                   eta, ii, jj, t0, t1, iterations, lm, ep, motion_only);
   }
 #if PORTABLE_EXTENSION_CUDA_ENABLED
-  if (volume.device().type() == torch::DeviceType::CUDA) {
+  if (targets.device().type() == torch::DeviceType::CUDA) {
     return ba_cuda(poses, disps, intrinsics, disps_sens, targets, weights,
                    eta, ii, jj, t0, t1, iterations, lm, ep, motion_only);
   }
@@ -75,11 +66,11 @@ torch::Tensor frame_distance(
   CHECK_INPUT(ii);
   CHECK_INPUT(jj);
 
-  if (volume.device().type() == torch::DeviceType::CPU) {
+  if (poses.device().type() == torch::DeviceType::CPU) {
     return frame_distance_cpu(poses, disps, intrinsics, ii, jj, beta);
   }
 #if PORTABLE_EXTENSION_CUDA_ENABLED
-  if (volume.device().type() == torch::DeviceType::CUDA) {
+  if (poses.device().type() == torch::DeviceType::CUDA) {
     return frame_distance_cuda(poses, disps, intrinsics, ii, jj, beta);
   }
 #endif
@@ -100,11 +91,11 @@ std::vector<torch::Tensor> projmap(
   CHECK_INPUT(ii);
   CHECK_INPUT(jj);
 
-  if (volume.device().type() == torch::DeviceType::CPU) {
+  if (poses.device().type() == torch::DeviceType::CPU) {
     return projmap_cpu(poses, disps, intrinsics, ii, jj);
   }
 #if PORTABLE_EXTENSION_CUDA_ENABLED
-  if (volume.device().type() == torch::DeviceType::CUDA) {
+  if (poses.device().type() == torch::DeviceType::CUDA) {
     return projmap_cuda(poses, disps, intrinsics, ii, jj);
   }
 #endif
@@ -120,11 +111,11 @@ torch::Tensor iproj(
   CHECK_INPUT(disps);
   CHECK_INPUT(intrinsics);
 
-  if (volume.device().type() == torch::DeviceType::CPU) {
+  if (poses.device().type() == torch::DeviceType::CPU) {
     return iproj_cpu(poses, disps, intrinsics);
   }
 #if PORTABLE_EXTENSION_CUDA_ENABLED
-  if (volume.device().type() == torch::DeviceType::CUDA) {
+  if (poses.device().type() == torch::DeviceType::CUDA) {
     return iproj_cuda(poses, disps, intrinsics);
   }
 #endif
@@ -145,7 +136,6 @@ std::vector<torch::Tensor> corr_index_forward(
   }
 #if PORTABLE_EXTENSION_CUDA_ENABLED
   if (volume.device().type() == torch::DeviceType::CUDA) {
-  {
     return corr_index_cuda_forward(volume, coords, radius);
   }
 #endif
@@ -163,7 +153,6 @@ std::vector<torch::Tensor> corr_index_backward(
 
 #if PORTABLE_EXTENSION_CUDA_ENABLED
   if (volume.device().type() == torch::DeviceType::CUDA) {
-  {
     auto volume_grad = corr_index_cuda_backward(volume, coords, corr_grad, radius);
     return {volume_grad};
   }
@@ -181,8 +170,7 @@ std::vector<torch::Tensor> altcorr_forward(
   CHECK_INPUT(coords);
 
 #if PORTABLE_EXTENSION_CUDA_ENABLED
-  if (volume.device().type() == torch::DeviceType::CUDA) {
-  {
+  if (fmap1.device().type() == torch::DeviceType::CUDA) {
     return altcorr_cuda_forward(fmap1, fmap2, coords, radius);
   }
 #endif
@@ -201,7 +189,7 @@ std::vector<torch::Tensor> altcorr_backward(
   CHECK_INPUT(corr_grad);
 
 #if PORTABLE_EXTENSION_CUDA_ENABLED
-  if (volume.device().type() == torch::DeviceType::CUDA) {
+  if (fmap1.device().type() == torch::DeviceType::CUDA) {
     return altcorr_cuda_backward(fmap1, fmap2, coords, corr_grad, radius);
   }
 #endif
@@ -221,11 +209,11 @@ torch::Tensor depth_filter(
   CHECK_INPUT(ix);
   CHECK_INPUT(thresh);
 
-  if (volume.device().type() == torch::DeviceType::CPU) {
+  if (poses.device().type() == torch::DeviceType::CPU) {
     return depth_filter_cpu(poses, disps, intrinsics, ix, thresh);
   }
 #if PORTABLE_EXTENSION_CUDA_ENABLED
-  if (volume.device().type() == torch::DeviceType::CUDA) {
+  if (poses.device().type() == torch::DeviceType::CUDA) {
     return depth_filter_cuda(poses, disps, intrinsics, ix, thresh);
   }
 #endif

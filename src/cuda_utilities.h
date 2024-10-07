@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cuda.h>
+#include <cuda_runtime.h>
 
 //CUDA_ERROR_CHECK()
 //cudaDeviceSynchronize()
