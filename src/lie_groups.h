@@ -1,9 +1,10 @@
 #pragma once
 
-#if CUDA_ENABLED
+#ifdef __CUDACC__
 #define DEVICE_DECORATOR __device__
 #else
 #define DEVICE_DECORATOR
+#endif
 
 DEVICE_DECORATOR void
 actSO3(const float *q, const float *X, float *Y) {
