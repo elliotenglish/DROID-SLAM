@@ -28,7 +28,7 @@ std::vector<torch::Tensor> corr_index_cpu_forward(
 
   auto opts = volume_.options();
   torch::Tensor corr_ = torch::zeros(
-    {batch_size, 2*radius+1, 2*radius+1, h1, w1}, opts);
+    {batch_size, rd, rd, h1, w1}, opts);
   torch::PackedTensorAccessor32<scalar_t,5> corr=
     corr_.packed_accessor32<scalar_t,5>();
 
@@ -36,8 +36,11 @@ std::vector<torch::Tensor> corr_index_cpu_forward(
   for(int x=0;x<w1;x++)
     for(int y=0;y<h1;y++)
     {
-      int x0=coords[n][0][y][x];
-      int y0=coords[n][1][y][x];
+      // if(x!=0 || y!=0)
+      //   continue;
+
+      float x0=coords[n][0][y][x];
+      float y0=coords[n][1][y][x];
 
       int x0f=int(floor(x0));
       int y0f=int(floor(y0));
@@ -58,7 +61,7 @@ std::vector<torch::Tensor> corr_index_cpu_forward(
           if(within_bounds(y1,x1,h2,w2))
           {
             float s=volume[n][y][x][y1][x1];
-            //print(s)
+            printf("(%d,%d,%d,%d,%d)=%g\n",n,y,x,y1,x1,s);
 
             if(i > 0 && j > 0)
               corr[n][i-1][j-1][y][x] += s * (dx * dy);
@@ -75,7 +78,7 @@ std::vector<torch::Tensor> corr_index_cpu_forward(
         }
     }
 
-  //print("cnt",cnt)
+  // print("cnt",cnt);
 
   return {corr_};
 }

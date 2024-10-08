@@ -3,6 +3,8 @@ import droid_backends
 import numpy as np
 import math
 
+tolerance=1e-4
+
 def within_bounds(h,w,H,W):
   return h >= 0 and h < H and w >= 0 and w < W
 
@@ -57,7 +59,7 @@ def corr_index_forward_reference(volume,coords,radius):
 
   # print("cnt",cnt)
 
-  return corr
+  return torch.tensor(corr)
 
 def test_corr_index_forward():
   def get_values(device="cpu",reference=False,print=False):
@@ -86,9 +88,9 @@ def test_corr_index_forward():
       print("radius",radius)
 
     cpu_device = torch.device("cpu")
-    gpu_device = torch.device(device)
-    volume=volume.to(device=gpu_device)
-    coords=coords.to(device=gpu_device)
+    compute_device = torch.device(device)
+    volume=volume.to(device=compute_device)
+    coords=coords.to(device=compute_device)
 
     # volume is expected to be BxH1xW1xH2xW2, where the values are the correlation values.
     # coords is expected to be BxCxH1xW1, where C is the coordinates of the frame 1 points projected in frame 2. The coordinates are x,y order rather than the y,x ordered used
@@ -108,9 +110,12 @@ def test_corr_index_forward():
 
     return corr
 
-  #vals_cpu=get_values(device="cpu")
+  vals_cpu=get_values(device="cpu",reference=False)
+  print("vals_cpu",vals_cpu)
   vals_gpu=get_values(device="cuda")
-  print(vals_gpu)
+  print("vals_gpu",vals_gpu)
+  error=vals_cpu-vals_gpu
+  assert (np.abs(error)<tolerance).all()
 
 def test_projected_transform_kernel():
   pass
