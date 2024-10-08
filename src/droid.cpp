@@ -6,7 +6,7 @@
 #include "correlation_kernels_cpu.h"
 #include "correlation_kernels_cuda.h"
 #include "altcorr_kernel.h"
-#include "cuda_utilities.h"
+#include "debug_utilities.h"
 
 
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")

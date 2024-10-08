@@ -1,5 +1,5 @@
 #include "droid_kernels_cpu.h"
-#include "cuda_utilities.h"
+#include "debug_utilities.h"
 
 std::vector<torch::Tensor> projective_transform_cpu(
   torch::Tensor poses,

@@ -1,10 +1,6 @@
 #pragma once
 
-#ifdef __CUDACC__
-#define DEVICE_DECORATOR __device__
-#else
-#define DEVICE_DECORATOR
-#endif
+#include "cuda_utilities.h"
 
 DEVICE_DECORATOR void
 actSO3(const float *q, const float *X, float *Y) {

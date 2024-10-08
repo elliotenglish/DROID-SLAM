@@ -12,12 +12,9 @@
 
 #include "correlation_kernels_cuda.h"
 #include "cuda_utilities.h"
+#include "array_utilities.h"
 
 #define BLOCK 16
-
-__forceinline__ __device__ bool within_bounds(int h, int w, int H, int W) {
-  return h >= 0 && h < H && w >= 0 && w < W;
-}
 
 template <typename scalar_t>
 __global__ void corr_index_forward_kernel(

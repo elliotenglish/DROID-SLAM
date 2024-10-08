@@ -30,6 +30,6 @@ setup(
                     '-gencode=arch=compute_86,code=sm_86',
                 ]
             }),
-    ] if cuda_enabled() else [],
+    ],
     cmdclass={ 'build_ext' : BuildExtension }
 )
