@@ -16,6 +16,6 @@ inline void cudaCheckError() {                                          \
 
 #define assert_not_implemented() \
 { \
-  printf("Not implemented"); \
+  printf("Not implemented\n"); \
   exit(1); \
 }
