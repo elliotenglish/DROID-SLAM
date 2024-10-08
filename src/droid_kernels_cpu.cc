@@ -7,7 +7,9 @@ std::vector<torch::Tensor> projective_transform_cpu(
   torch::Tensor intrinsics,
   torch::Tensor ii,
   torch::Tensor jj)
-{assert_not_implemented();}
+{
+
+}
 
 torch::Tensor depth_filter_cpu(
     torch::Tensor poses,
