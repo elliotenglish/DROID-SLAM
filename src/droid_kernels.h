@@ -201,17 +201,19 @@ SparseBlock schur_block(torch::Tensor E,
   return A;
 }
 
+#42 is growing over time
+
 template<typename F1,typename F2,typename F3,typename F4,typename F5,typename F6,typename F7>
 std::vector<torch::Tensor> ba_generic(
-    torch::Tensor poses,
-    torch::Tensor disps,
-    torch::Tensor intrinsics,
-    torch::Tensor disps_sens,
-    torch::Tensor targets,
-    torch::Tensor weights,
-    torch::Tensor eta,
-    torch::Tensor ii,
-    torch::Tensor jj,
+    torch::Tensor poses, #512x7
+    torch::Tensor disps, #512xHxW
+    torch::Tensor intrinsics, #4
+    torch::Tensor disps_sens, #512xHxW
+    torch::Tensor targets, #42x2xHxW
+    torch::Tensor weights, #42x2xHxW
+    torch::Tensor eta, #9xHxW
+    torch::Tensor ii, #42
+    torch::Tensor jj, #42
     const int t0,
     const int t1,
     const int iterations,
