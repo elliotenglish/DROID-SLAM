@@ -897,7 +897,8 @@ torch::Tensor accum_cuda(
   const torch::Tensor ptrs,
   const torch::Tensor idxs)
 {
-  torch::Tensor out = torch::zeros({jx.size(0),inps.size(1)},inps.options());
+  int count=ptrs.size(0)-1;
+  torch::Tensor out = torch::zeros({count,inps.size(1)},inps.options());
   accum_kernel<<<count, THREADS>>>(
     inps.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
     ptrs.packed_accessor32<long,1,torch::RestrictPtrTraits>(),
@@ -977,10 +978,10 @@ void disp_retr_cuda(
     const torch::Tensor dz,
     const torch::Tensor inds)
 {
-  disp_retr_kernel<<<kx.size(0), THREADS>>>(
+  disp_retr_kernel<<<inds.size(0), THREADS>>>(
     disps.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
     dz.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
-    kx.packed_accessor32<long,1,torch::RestrictPtrTraits>());
+    inds.packed_accessor32<long,1,torch::RestrictPtrTraits>());
 }
 
 ///////////////////////////////////////////////////////////
@@ -1047,10 +1048,10 @@ void EEt6x6_cuda(
     const torch::Tensor idx,
     torch::Tensor S)
 {
-  EEt6x6_kernel<<<ix_dev.size(0), THREADS>>>(
+  EEt6x6_kernel<<<idx.size(0), THREADS>>>(
     E.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
     Q.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
-    ix_dev.packed_accessor32<long,2,torch::RestrictPtrTraits>(),
+    idx.packed_accessor32<long,2,torch::RestrictPtrTraits>(),
     S.packed_accessor32<float,3,torch::RestrictPtrTraits>());
 }
 
@@ -1099,11 +1100,11 @@ void Ev6x1_cuda(
     const torch::Tensor idx,
     torch::Tensor v)
 {
-  Ev6x1_kernel<<<jx_dev.size(0), THREADS>>>(
+  Ev6x1_kernel<<<idx.size(0), THREADS>>>(
     E.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
     Q.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
     w.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
-    jx_dev.packed_accessor32<long,2,torch::RestrictPtrTraits>(),
+    idx.packed_accessor32<long,2,torch::RestrictPtrTraits>(),
     v.packed_accessor32<float,2,torch::RestrictPtrTraits>());
 }
 
@@ -1137,9 +1138,9 @@ void EvT6x1_cuda(
   const torch::Tensor idx,
   torch::Tensor w)
 {
-  EvT6x1_kernel<<<ix.size(0), THREADS>>>(
+  EvT6x1_kernel<<<idx.size(0), THREADS>>>(
     E.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
-    dx.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
-    ix.packed_accessor32<long,1,torch::RestrictPtrTraits>(),
-    dw.packed_accessor32<float,2,torch::RestrictPtrTraits>());
+    x.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
+    idx.packed_accessor32<long,1,torch::RestrictPtrTraits>(),
+    w.packed_accessor32<float,2,torch::RestrictPtrTraits>());
 }

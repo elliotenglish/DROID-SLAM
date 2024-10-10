@@ -514,7 +514,6 @@ class SparseBlock {
 
 };
 
-template<typename F1,typename F2>
 SparseBlock schur_block(torch::Tensor E,
                         torch::Tensor Q,
                         torch::Tensor w,

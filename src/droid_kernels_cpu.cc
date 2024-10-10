@@ -264,12 +264,17 @@ void accum_kernel(
 }
 
 torch::Tensor accum_cpu(
-  const torch::PackedTensorAccessor32<float,2> inps,
-  const torch::PackedTensorAccessor32<long,1> ptrs,
-  const torch::PackedTensorAccessor32<long,1> idxs)
+  const torch::Tensor inps,
+  const torch::Tensor ptrs,
+  const torch::Tensor idxs)
 {
-  torch::Tensor out = torch::zeros({jx.size(0),inps.size(1)},inps.options());
-  accum_kernel(inps,ptrs,idxs,out);
+  int count=ptrs.size(0)-1;
+  torch::Tensor out = torch::zeros({count,inps.size(1)},inps.options());
+  accum_kernel(
+    inps.packed_accessor32<float,2>(),
+    ptrs.packed_accessor32<long,1>(),
+    idxs.packed_accessor32<long,1>(),
+    out.packed_accessor32<float,2>());
   return out;
 }
 
