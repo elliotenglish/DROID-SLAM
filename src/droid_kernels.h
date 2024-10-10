@@ -13,6 +13,8 @@
 typedef Eigen::SparseMatrix<double> SpMat;
 typedef Eigen::Triplet<double> T;
 
+#define MIN_DEPTH 0.25
+
 class SparseBlock {
   public:
 

@@ -24,8 +24,6 @@
 typedef std::vector<std::vector<long>> graph_t;
 typedef std::vector<torch::Tensor> tensor_list_t;
 
-#define MIN_DEPTH 0.25
-
 #define THREADS 256
 #define NUM_BLOCKS(batch_size) ((batch_size + THREADS - 1) / THREADS)
 
@@ -755,26 +753,6 @@ __global__ void accum_kernel(
   }  
 }
 
-
-__device__ void
-retrSE3(const float *xi, const float* t, const float* q, float* t1, float* q1) {
-  // retraction on SE3 manifold
-
-  float dt[3] = {0, 0, 0};
-  float dq[4] = {0, 0, 0, 1};
-  
-  expSE3(xi, dt, dq);
-
-  q1[0] = dq[3] * q[0] + dq[0] * q[3] + dq[1] * q[2] - dq[2] * q[1];
-  q1[1] = dq[3] * q[1] + dq[1] * q[3] + dq[2] * q[0] - dq[0] * q[2];
-  q1[2] = dq[3] * q[2] + dq[2] * q[3] + dq[0] * q[1] - dq[1] * q[0];
-  q1[3] = dq[3] * q[3] - dq[0] * q[0] - dq[1] * q[1] - dq[2] * q[2];
-
-  actSO3(dq, t, t1);
-  t1[0] += dt[0];
-  t1[1] += dt[1];
-  t1[2] += dt[2];
-}
 
 
 __global__ void pose_retr_kernel(
