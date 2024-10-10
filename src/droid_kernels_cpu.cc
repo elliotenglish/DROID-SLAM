@@ -1,5 +1,7 @@
+#include "droid_kernels.h"
 #include "droid_kernels_cpu.h"
 #include "debug_utilities.h"
+#include "lie_groups.h"
 
 void projective_transform_kernel(
     const torch::PackedTensorAccessor32<float,4> target,
@@ -16,8 +18,8 @@ void projective_transform_kernel(
     torch::PackedTensorAccessor32<float,2> Cii,
     torch::PackedTensorAccessor32<float,2> bz)
 {
-  // int ht=disps.size(1);
-  // int wd=poses.size(2);
+  int ht=disps.size(1);
+  int wd=poses.size(2);
 
   //For each ii/jj frame pair/graph edge (i.e. block_id)
   int num_blocks=ii.size(0);
@@ -58,8 +60,8 @@ void projective_transform_kernel(
     int l;//used as a counter in a few places;
 
     int k=-1;
-    for(int i=0;i<h1;i++)
-      for(int j=0;j<w1;j++)
+    for(int i=0;i<ht;i++)
+      for(int j=0;j<wd;j++)
       {
         k++;
 
@@ -205,9 +207,7 @@ std::vector<torch::Tensor> projective_transform_cpu(
   torch::Tensor intrinsics,
   torch::Tensor ii,
   torch::Tensor jj)
-{
-
-}
+{assert_not_implemented();}
 
 torch::Tensor depth_filter_cpu(
     torch::Tensor poses,
@@ -241,10 +241,10 @@ torch::Tensor iproj_cpu(
 {assert_not_implemented();}
 
 void accum_kernel(
-  const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> inps,
-  const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> ptrs,
-  const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> idxs,
-  torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> outs)
+  const torch::PackedTensorAccessor32<float,2> inps,
+  const torch::PackedTensorAccessor32<long,1> ptrs,
+  const torch::PackedTensorAccessor32<long,1> idxs,
+  torch::PackedTensorAccessor32<float,2> outs)
 {
   int count=ptrs.size(0)-1;
   int D = inps.size(2);
@@ -252,7 +252,7 @@ void accum_kernel(
   {
     const int start = ptrs[block_id];
     const int end = ptrs[block_id+1];
-    for(int k=0; k<D; k+=blockDim.x)
+    for(int k=0; k<D; k++)
     {
       float x = 0;
       for (int i=start; i<end; i++) {
@@ -261,6 +261,16 @@ void accum_kernel(
       outs[block_id][k] = x;
     }
   }
+}
+
+torch::Tensor accum_cpu(
+  const torch::PackedTensorAccessor32<float,2> inps,
+  const torch::PackedTensorAccessor32<long,1> ptrs,
+  const torch::PackedTensorAccessor32<long,1> idxs)
+{
+  torch::Tensor out = torch::zeros({jx.size(0),inps.size(1)},inps.options());
+  accum_kernel(inps,ptrs,idxs,out);
+  return out;
 }
 
 std::vector<torch::Tensor> ba_cpu(
@@ -280,113 +290,113 @@ std::vector<torch::Tensor> ba_cpu(
     const float ep,
     const bool motion_only)
 {
-  const int num = ii.size(0);
-  return ba_generic(
-    poses,
-    disps,
-    intrinsics,
-    disps_sense,
-    targets,
-    weights,
-    eta,
-    ii,
-    jj,
-    t0,
-    t1,
-    iterations,
-    lm,
-    ep,
-    motion_only,
-    poses.device(),
-    [](torch::Tensor& targets,
-       torch::Tensor& weights,
-       torch::Tensor& poses,
-       torch::Tensor& disps,
-       torch::Tensor& intrinsics,
-       torch::Tensor& ii,
-       torch::Tensor& jj,
-       torch::Tensor& Hs,
-       torch::Tensor& vs,
-       torch::Tensor& Eii,
-       torch::Tensor& Eij,
-       torch::Tensor& Cii,
-       torch::Tensor& wi)
-      {
-        // const int num = ii.size(0);
-        projective_transform_kernel(
-          targets.packed_accessor32<float,4>(),
-          weights.packed_accessor32<float,4>(),
-          poses.packed_accessor32<float,2>(),
-          disps.packed_accessor32<float,3>(),
-          intrinsics.packed_accessor32<float,1>(),
-          ii.packed_accessor32<long,1>(),
-          jj.packed_accessor32<long,1>(),
-          Hs.packed_accessor32<float,4>(),
-          vs.packed_accessor32<float,3>(),
-          Eii.packed_accessor32<float,3>(),
-          Eij.packed_accessor32<float,3>(),
-          Cii.packed_accessor32<float,2>(),
-          wi.packed_accessor32<float,2>()
-        );
-      },
-    [](torch::Tensor& poses,
-       torch::Tensor& dx,
-       int t0,
-       int t1)
-      {
-        pose_retr_kernel(
-          poses.packed_accessor32<float,2>(),
-          dx.packed_accessor32<float,2>(), t0, t1);
-      },
-    [](torch::Tensor& E,
-       torch::Tensor& dx,
-       torch::Tensor& ix,
-       torch::Tensor& dw)
-      {
-        EvT6x1_kernel(
-          E.packed_accessor32<float,3>(),
-          dx.packed_accessor32<float,2>(),
-          ix.packed_accessor32<long,1>(),
-          dw.packed_accessor32<float,2>());
-      },
-    [](torch::Tensor& disps,
-       torch::Tensor& dz,
-       torch::Tensor& kx)
-      {
-        disp_retr_kernel(
-        disps.packed_accessor32<float,3>(),
-        dz.packed_accessor32<float,2>(),
-        kx.packed_accessor32<long,1>());
-      },
-    [](const torch::Tensor& A,
-       const torch::Tensor& B,
-       const torch::Tensor& C)
-      {
-        return accum_cuda(A,B,C);
-      },
-    [](torch::Tensor& E,
-       torch::Tensor& Q,
-       torch::Tensor& ix_dev,
-       torch::Tensor& S)
-      {
-        EEt6x6_kernel(
-          E.packed_accessor32<float,3>(),
-          Q.packed_accessor32<float,2>(),
-          ix_dev.packed_accessor32<long,2>(),
-          S.packed_accessor32<float,3>());
-      },
-    [](torch::Tensor& E,
-       torch::Tensor& Q,
-       torch::Tensor& w,
-       torch::Tensor& jx_dev,
-       torch::Tensor& v)
-      {
-        Ev6x1_kernel(
-          E.packed_accessor32<float,3>(),
-          Q.packed_accessor32<float,2>(),
-          w.packed_accessor32<float,2>(),
-          jx_dev.packed_accessor32<long,2>(),
-          v.packed_accessor32<float,2>());
-      }
-    );
+  // const int num = ii.size(0);
+  // return ba_generic(
+  //   poses,
+  //   disps,
+  //   intrinsics,
+  //   disps_sense,
+  //   targets,
+  //   weights,
+  //   eta,
+  //   ii,
+  //   jj,
+  //   t0,
+  //   t1,
+  //   iterations,
+  //   lm,
+  //   ep,
+  //   motion_only,
+  //   poses.device(),
+  //   [](torch::Tensor& targets,
+  //      torch::Tensor& weights,
+  //      torch::Tensor& poses,
+  //      torch::Tensor& disps,
+  //      torch::Tensor& intrinsics,
+  //      torch::Tensor& ii,
+  //      torch::Tensor& jj,
+  //      torch::Tensor& Hs,
+  //      torch::Tensor& vs,
+  //      torch::Tensor& Eii,
+  //      torch::Tensor& Eij,
+  //      torch::Tensor& Cii,
+  //      torch::Tensor& wi)
+  //     {
+  //       // const int num = ii.size(0);
+  //       projective_transform_kernel(
+  //         targets.packed_accessor32<float,4>(),
+  //         weights.packed_accessor32<float,4>(),
+  //         poses.packed_accessor32<float,2>(),
+  //         disps.packed_accessor32<float,3>(),
+  //         intrinsics.packed_accessor32<float,1>(),
+  //         ii.packed_accessor32<long,1>(),
+  //         jj.packed_accessor32<long,1>(),
+  //         Hs.packed_accessor32<float,4>(),
+  //         vs.packed_accessor32<float,3>(),
+  //         Eii.packed_accessor32<float,3>(),
+  //         Eij.packed_accessor32<float,3>(),
+  //         Cii.packed_accessor32<float,2>(),
+  //         wi.packed_accessor32<float,2>()
+  //       );
+  //     },
+  //   [](torch::Tensor& poses,
+  //      torch::Tensor& dx,
+  //      int t0,
+  //      int t1)
+  //     {
+  //       pose_retr_kernel(
+  //         poses.packed_accessor32<float,2>(),
+  //         dx.packed_accessor32<float,2>(), t0, t1);
+  //     },
+  //   [](torch::Tensor& E,
+  //      torch::Tensor& dx,
+  //      torch::Tensor& ix,
+  //      torch::Tensor& dw)
+  //     {
+  //       EvT6x1_kernel(
+  //         E.packed_accessor32<float,3>(),
+  //         dx.packed_accessor32<float,2>(),
+  //         ix.packed_accessor32<long,1>(),
+  //         dw.packed_accessor32<float,2>());
+  //     },
+  //   [](torch::Tensor& disps,
+  //      torch::Tensor& dz,
+  //      torch::Tensor& kx)
+  //     {
+  //       disp_retr_kernel(
+  //       disps.packed_accessor32<float,3>(),
+  //       dz.packed_accessor32<float,2>(),
+  //       kx.packed_accessor32<long,1>());
+  //     },
+  //   [](const torch::Tensor& A,
+  //      const torch::Tensor& B,
+  //      const torch::Tensor& C)
+  //     {
+  //       return accum_cuda(A,B,C);
+  //     },
+  //   [](torch::Tensor& E,
+  //      torch::Tensor& Q,
+  //      torch::Tensor& ix_dev,
+  //      torch::Tensor& S)
+  //     {
+  //       EEt6x6_kernel(
+  //         E.packed_accessor32<float,3>(),
+  //         Q.packed_accessor32<float,2>(),
+  //         ix_dev.packed_accessor32<long,2>(),
+  //         S.packed_accessor32<float,3>());
+  //     },
+  //   [](torch::Tensor& E,
+  //      torch::Tensor& Q,
+  //      torch::Tensor& w,
+  //      torch::Tensor& jx_dev,
+  //      torch::Tensor& v)
+  //     {
+  //       // Ev6x1_kernel(
+  //       //   E.packed_accessor32<float,3>(),
+  //       //   Q.packed_accessor32<float,2>(),
+  //       //   w.packed_accessor32<float,2>(),
+  //       //   jx_dev.packed_accessor32<long,2>(),
+  //       //   v.packed_accessor32<float,2>());
+  //     }
+  //   );
 }

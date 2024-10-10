@@ -18,6 +18,7 @@ setup(
                 'src/correlation_kernels_cpu.cc',
                 'src/correlation_kernels_cuda.cu',
                 'src/altcorr_kernel.cu',
+                "src/debug_utilities.cc",
             ],
             extra_compile_args={
                 'cxx': ['-g',"-O0"],

@@ -2,8 +2,8 @@
 
 #include "cuda_utilities.h"
 
-DEVICE_DECORATOR void
-actSO3(const float *q, const float *X, float *Y) {
+DEVICE_DECORATOR inline
+void actSO3(const float *q, const float *X, float *Y) {
   float uv[3];
   uv[0] = 2.0 * (q[1]*X[2] - q[2]*X[1]);
   uv[1] = 2.0 * (q[2]*X[0] - q[0]*X[2]);
@@ -14,8 +14,8 @@ actSO3(const float *q, const float *X, float *Y) {
   Y[2] = X[2] + q[3]*uv[2] + (q[0]*uv[1] - q[1]*uv[0]);
 }
 
-DEVICE_DECORATOR  void
-actSE3(const float *t, const float *q, const float *X, float *Y) {
+DEVICE_DECORATOR inline
+void actSE3(const float *t, const float *q, const float *X, float *Y) {
   actSO3(q, X, Y);
   Y[3] = X[3];
   Y[0] += X[3] * t[0];
@@ -23,8 +23,8 @@ actSE3(const float *t, const float *q, const float *X, float *Y) {
   Y[2] += X[3] * t[2];
 }
 
-DEVICE_DECORATOR void
-adjSE3(const float *t, const float *q, const float *X, float *Y) {
+DEVICE_DECORATOR inline
+void adjSE3(const float *t, const float *q, const float *X, float *Y) {
   float qinv[4] = {-q[0], -q[1], -q[2], q[3]};
   actSO3(qinv, &X[0], &Y[0]);
   actSO3(qinv, &X[3], &Y[3]);
@@ -40,8 +40,8 @@ adjSE3(const float *t, const float *q, const float *X, float *Y) {
   Y[5] += v[2];
 }
 
-DEVICE_DECORATOR void 
-relSE3(const float *ti, const float *qi, const float *tj, const float *qj, float *tij, float *qij) {
+DEVICE_DECORATOR inline
+void relSE3(const float *ti, const float *qi, const float *tj, const float *qj, float *tij, float *qij) {
   qij[0] = -qj[3] * qi[0] + qj[0] * qi[3] - qj[1] * qi[2] + qj[2] * qi[1],
   qij[1] = -qj[3] * qi[1] + qj[1] * qi[3] - qj[2] * qi[0] + qj[0] * qi[2],
   qij[2] = -qj[3] * qi[2] + qj[2] * qi[3] - qj[0] * qi[1] + qj[1] * qi[0],
@@ -54,8 +54,8 @@ relSE3(const float *ti, const float *qi, const float *tj, const float *qj, float
 }
 
   
-DEVICE_DECORATOR void
-expSO3(const float *phi, float* q) {
+DEVICE_DECORATOR inline
+void expSO3(const float *phi, float* q) {
   // SO3 exponential map
   float theta_sq = phi[0]*phi[0] + phi[1]*phi[1] + phi[2]*phi[2];
   float theta_p4 = theta_sq * theta_sq;
@@ -78,8 +78,8 @@ expSO3(const float *phi, float* q) {
 
 }
 
-DEVICE_DECORATOR void
-crossInplace(const float* a, float *b) {
+DEVICE_DECORATOR inline
+void crossInplace(const float* a, float *b) {
   float x[3] = {
     a[1]*b[2] - a[2]*b[1],
     a[2]*b[0] - a[0]*b[2],
@@ -91,8 +91,8 @@ crossInplace(const float* a, float *b) {
   b[2] = x[2];
 }
 
-DEVICE_DECORATOR void
-expSE3(const float *xi, float* t, float* q) {
+DEVICE_DECORATOR inline
+void expSE3(const float *xi, float* t, float* q) {
   // SE3 exponential map
 
   expSO3(xi + 3, q);
@@ -121,8 +121,8 @@ expSE3(const float *xi, float* t, float* q) {
   }
 }
 
-DEVICE_DECORATOR void
-retrSE3(const float *xi, const float* t, const float* q, float* t1, float* q1) {
+DEVICE_DECORATOR inline
+void retrSE3(const float *xi, const float* t, const float* q, float* t1, float* q1) {
   // retraction on SE3 manifold
 
   float dt[3] = {0, 0, 0};
