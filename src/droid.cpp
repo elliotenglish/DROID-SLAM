@@ -219,7 +219,7 @@ torch::Tensor depth_filter(
   assert_not_implemented();
 }
 
-std::vector<torch::Tensor> projective_transform(
+void projective_transform(
   const torch::Tensor& targets,
   const torch::Tensor& weights,
   const torch::Tensor& poses,
@@ -394,7 +394,7 @@ torch::Tensor accum2(
 
   long* idxs_data = idxs_cpu.data_ptr<long>();
 
-  for (int i=0; i<cols.size(); i++) {
+  for (unsigned int i=0; i<cols.size(); i++) {
     idxs_data[i] = cols[i];
   }
 
@@ -528,7 +528,7 @@ SparseBlock schur_block(torch::Tensor E,
   torch::Tensor kk_cpu = kk.to(torch::kCPU);
 
   const int P = t1 - t0;
-  const long* ii_data = ii_cpu.data_ptr<long>();
+  //const long* ii_data = ii_cpu.data_ptr<long>();
   const long* jj_data = jj_cpu.data_ptr<long>();
   const long* kk_data = kk_cpu.data_ptr<long>();
 
@@ -548,10 +548,11 @@ SparseBlock schur_block(torch::Tensor E,
 
   std::vector<long> ii_list, jj_list, idx, jdx;
 
+  typedef std::vector<long>::size_type TI;
   for (int i=0; i<P; i++) {
     for (int j=0; j<P; j++) {
-      for (int k=0; k < graph[i].size(); k++) {
-        for (int l=0; l < graph[j].size(); l++) {
+      for (TI k=0; k < graph[i].size(); k++) {
+        for (TI l=0; l < graph[j].size(); l++) {
           if (graph[i][k] == graph[j][l]) {
             ii_list.push_back(i);
             jj_list.push_back(j);

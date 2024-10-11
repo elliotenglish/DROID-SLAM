@@ -10,7 +10,8 @@ setup(
     ext_modules=[
         PortableExtension('droid_backends',
             include_dirs=[
-              "/usr/include/eigen3"],
+              "/usr/include/eigen3",
+              "/usr/local/include/eigen3"],
             sources=[
                 'src/droid.cpp',
                 'src/droid_kernels_cpu.cc',
