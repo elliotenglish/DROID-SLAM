@@ -61,7 +61,7 @@ std::vector<torch::Tensor> corr_index_cpu_forward(
           if(within_bounds(y1,x1,h2,w2))
           {
             float s=volume[n][y][x][y1][x1];
-            printf("(%d,%d,%d,%d,%d)=%g\n",n,y,x,y1,x1,s);
+            // printf("(%d,%d,%d,%d,%d)=%g\n",n,y,x,y1,x1,s);
 
             if(i > 0 && j > 0)
               corr[n][i-1][j-1][y][x] += s * (dx * dy);

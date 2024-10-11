@@ -56,19 +56,19 @@ __device__ void blockReduce(volatile float *sdata) {
 ///////////////////////////////////////////////////////////
 
 __global__ void projective_transform_kernel(
-    const torch::PackedTensorAccessor32<float,4,torch::RestrictPtrTraits> target,
-    const torch::PackedTensorAccessor32<float,4,torch::RestrictPtrTraits> weight,
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> poses,
-    const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> disps,
-    const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> intrinsics,
-    const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> ii,
-    const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> jj,
-    torch::PackedTensorAccessor32<float,4,torch::RestrictPtrTraits> Hs,
-    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> vs,
-    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> Eii,
-    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> Eij,
-    torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> Cii,
-    torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> bz)
+  const torch::PackedTensorAccessor32<float,4,torch::RestrictPtrTraits> target,
+  const torch::PackedTensorAccessor32<float,4,torch::RestrictPtrTraits> weight,
+  const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> poses,
+  const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> disps,
+  const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> intrinsics,
+  const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> ii,
+  const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> jj,
+  torch::PackedTensorAccessor32<float,4,torch::RestrictPtrTraits> Hs,
+  torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> vs,
+  torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> Eii,
+  torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> Eij,
+  torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> Cii,
+  torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> bz)
 {
   const int block_id = blockIdx.x;
   const int thread_id = threadIdx.x;
@@ -340,13 +340,13 @@ void projective_transform_cuda(
 ///////////////////////////////////////////////////////////
 
 __global__ void projmap_kernel(
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> poses,
-    const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> disps,
-    const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> intrinsics,
-    const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> ii,
-    const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> jj,
-    torch::PackedTensorAccessor32<float,4,torch::RestrictPtrTraits> coords,
-    torch::PackedTensorAccessor32<float,4,torch::RestrictPtrTraits> valid)
+  const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> poses,
+  const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> disps,
+  const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> intrinsics,
+  const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> ii,
+  const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> jj,
+  torch::PackedTensorAccessor32<float,4,torch::RestrictPtrTraits> coords,
+  torch::PackedTensorAccessor32<float,4,torch::RestrictPtrTraits> valid)
 {
 
   const int block_id = blockIdx.x;
@@ -431,11 +431,11 @@ __global__ void projmap_kernel(
 }
 
 std::vector<torch::Tensor> projmap_cuda(
-    torch::Tensor poses,
-    torch::Tensor disps,
-    torch::Tensor intrinsics,
-    torch::Tensor ii,
-    torch::Tensor jj)
+  const torch::Tensor& poses,
+  const torch::Tensor& disps,
+  const torch::Tensor& intrinsics,
+  const torch::Tensor& ii,
+  const torch::Tensor& jj)
 {
   auto opts = poses.options();
   const int num = ii.size(0);
@@ -460,13 +460,13 @@ std::vector<torch::Tensor> projmap_cuda(
 ///////////////////////////////////////////////////////////
 
 __global__ void frame_distance_kernel(
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> poses,
-    const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> disps,
-    const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> intrinsics,
-    const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> ii,
-    const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> jj,
-    torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> dist,
-    const float beta) {
+  const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> poses,
+  const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> disps,
+  const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> intrinsics,
+  const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> ii,
+  const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> jj,
+  torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> dist,
+  const float beta) {
 
   const int block_id = blockIdx.x;
   const int thread_id = threadIdx.x;
@@ -496,7 +496,6 @@ __global__ void frame_distance_kernel(
   }
 
   __syncthreads();
-
 
   //points 
   float Xi[4];
@@ -601,12 +600,12 @@ __global__ void frame_distance_kernel(
 }
 
 torch::Tensor frame_distance_cuda(
-    torch::Tensor poses,
-    torch::Tensor disps,
-    torch::Tensor intrinsics,
-    torch::Tensor ii,
-    torch::Tensor jj,
-    const float beta)
+  const torch::Tensor& poses,
+  const torch::Tensor& disps,
+  const torch::Tensor& intrinsics,
+  const torch::Tensor& ii,
+  const torch::Tensor& jj,
+  const float beta)
 {
   auto opts = poses.options();
   const int num = ii.size(0);
@@ -627,12 +626,12 @@ torch::Tensor frame_distance_cuda(
 ///////////////////////////////////////////////////////////
 
 __global__ void depth_filter_kernel(
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> poses,
-    const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> disps,
-    const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> intrinsics,
-    const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> inds,
-    const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> thresh,
-    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> counter)
+  const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> poses,
+  const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> disps,
+  const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> intrinsics,
+  const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> inds,
+  const torch::PackedTensorAccessor32<float,1,torch::RestrictPtrTraits> thresh,
+  torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> counter)
 {
 
   const int block_id = blockIdx.x;
@@ -743,11 +742,11 @@ __global__ void depth_filter_kernel(
 }
 
 torch::Tensor depth_filter_cuda(
-  const torch::Tensor poses,
-  const torch::Tensor disps,
-  const torch::Tensor intrinsics,
-  const torch::Tensor ix,
-  const torch::Tensor thresh)
+  const torch::Tensor& poses,
+  const torch::Tensor& disps,
+  const torch::Tensor& intrinsics,
+  const torch::Tensor& ix,
+  const torch::Tensor& thresh)
 {
   const int num = ix.size(0);
   const int ht = disps.size(1);
@@ -844,9 +843,9 @@ __global__ void iproj_kernel(
 }
 
 torch::Tensor iproj_cuda(
-    torch::Tensor poses,
-    torch::Tensor disps,
-    torch::Tensor intrinsics)
+  const torch::Tensor& poses,
+  const torch::Tensor& disps,
+  const torch::Tensor& intrinsics)
 {
 
   const int nm = disps.size(0);
@@ -893,9 +892,9 @@ __global__ void accum_kernel(
 }
 
 torch::Tensor accum_cuda(
-  const torch::Tensor inps,
-  const torch::Tensor ptrs,
-  const torch::Tensor idxs)
+  const torch::Tensor& inps,
+  const torch::Tensor& ptrs,
+  const torch::Tensor& idxs)
 {
   int count=ptrs.size(0)-1;
   torch::Tensor out = torch::zeros({count,inps.size(1)},inps.options());
@@ -910,9 +909,9 @@ torch::Tensor accum_cuda(
 ///////////////////////////////////////////////////////////
 
 __global__ void pose_retr_kernel(
-    torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> poses,
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> dx,
-    const int t0, const int t1) 
+  torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> poses,
+  const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> dx,
+  const int t0, const int t1)
 {
 
   for (int k=t0+threadIdx.x; k<t1; k+=blockDim.x) {
@@ -945,10 +944,10 @@ __global__ void pose_retr_kernel(
 }
 
 void pose_retr_cuda(
-    torch::Tensor poses,
-    const torch::Tensor dx,
-    const int t0,
-    const int t1) 
+  torch::Tensor& poses,
+  const torch::Tensor& dx,
+  const int t0,
+  const int t1)
 {
   pose_retr_kernel<<<1, THREADS>>>(
     poses.packed_accessor32<float,2,torch::RestrictPtrTraits>(),
@@ -959,9 +958,9 @@ void pose_retr_cuda(
 ///////////////////////////////////////////////////////////
 
 __global__ void disp_retr_kernel(
-    torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> disps,
-    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> dz,
-    const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> inds) 
+  torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> disps,
+  const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> dz,
+  const torch::PackedTensorAccessor32<long,1,torch::RestrictPtrTraits> inds)
 {
   const int i = inds[blockIdx.x];
   const int ht = disps.size(1);
@@ -974,9 +973,9 @@ __global__ void disp_retr_kernel(
 }
 
 void disp_retr_cuda(
-    torch::Tensor disps,
-    const torch::Tensor dz,
-    const torch::Tensor inds)
+  torch::Tensor disps,
+  const torch::Tensor& dz,
+  const torch::Tensor& inds)
 {
   disp_retr_kernel<<<inds.size(0), THREADS>>>(
     disps.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
@@ -1043,10 +1042,10 @@ __global__ void EEt6x6_kernel(
 }
 
 void EEt6x6_cuda(
-    const torch::Tensor E,
-    const torch::Tensor Q,
-    const torch::Tensor idx,
-    torch::Tensor S)
+  const torch::Tensor& E,
+  const torch::Tensor& Q,
+  const torch::Tensor& idx,
+  torch::Tensor& S)
 {
   EEt6x6_kernel<<<idx.size(0), THREADS>>>(
     E.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
@@ -1094,11 +1093,11 @@ __global__ void Ev6x1_kernel(
 }
 
 void Ev6x1_cuda(
-    const torch::Tensor E,
-    const torch::Tensor Q,
-    const torch::Tensor w,
-    const torch::Tensor idx,
-    torch::Tensor v)
+  const torch::Tensor& E,
+  const torch::Tensor& Q,
+  const torch::Tensor& w,
+  const torch::Tensor& idx,
+  torch::Tensor& v)
 {
   Ev6x1_kernel<<<idx.size(0), THREADS>>>(
     E.packed_accessor32<float,3,torch::RestrictPtrTraits>(),
@@ -1133,10 +1132,10 @@ __global__ void EvT6x1_kernel(
 }
 
 void EvT6x1_cuda(
-  const torch::Tensor E,
-  const torch::Tensor x,
-  const torch::Tensor idx,
-  torch::Tensor w)
+  const torch::Tensor& E,
+  const torch::Tensor& x,
+  const torch::Tensor& idx,
+  torch::Tensor& w)
 {
   EvT6x1_kernel<<<idx.size(0), THREADS>>>(
     E.packed_accessor32<float,3,torch::RestrictPtrTraits>(),

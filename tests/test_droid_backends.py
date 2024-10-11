@@ -2,6 +2,7 @@ import torch
 import droid_backends
 import numpy as np
 import math
+import pytest
 
 tolerance=1e-4
 
@@ -111,9 +112,9 @@ def test_corr_index_forward():
     return corr
 
   vals_cpu=get_values(device="cpu",reference=False)
-  print("vals_cpu",vals_cpu)
+  #print("vals_cpu",vals_cpu)
   vals_gpu=get_values(device="cuda")
-  print("vals_gpu",vals_gpu)
+  #print("vals_gpu",vals_gpu)
   error=vals_cpu-vals_gpu
   assert (np.abs(error)<tolerance).all()
 
@@ -121,4 +122,5 @@ def test_projected_transform_kernel():
   pass
 
 if __name__=="__main__":
+  #pytest.main(["-x",__file__])
   test_corr_index_forward()

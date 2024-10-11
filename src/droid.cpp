@@ -290,16 +290,16 @@ if (dz.device().type() == torch::DeviceType::CPU) {
 }
 
 torch::Tensor accum(
-  const torch::Tensor data,
-  const torch::Tensor ix,
-  const torch::Tensor jx)
+  const torch::Tensor& inps,
+  const torch::Tensor& ptrs,
+  const torch::Tensor& idxs)
 {
-  if (data.device().type() == torch::DeviceType::CPU) {
-    return accum_cpu(data,ix,jx);
+  if (inps.device().type() == torch::DeviceType::CPU) {
+    return accum_cpu(inps,ptrs,idxs);
   }
 #if PORTABLE_EXTENSION_CUDA_ENABLED
-  if (data.device().type() == torch::DeviceType::CUDA) {
-    return accum_cuda(data,ix,jx);
+  if (inps.device().type() == torch::DeviceType::CUDA) {
+    return accum_cuda(inps,ptrs,idxs);
   }
 #endif
   assert_not_implemented();
@@ -684,7 +684,7 @@ std::vector<torch::Tensor> ba(
       torch::Tensor w = accum2(wi, ii, kx) - m * alpha * (disps.index({kx, "..."}) - disps_sens.index({kx, "..."})).view({-1, ht*wd});
       torch::Tensor Q = 1.0 / C;
 
-      torch::Tensor Ei = accum(Eii.view({num, 6*ht*wd}), ii, ts).view({t1-t0, 6, ht*wd});
+      torch::Tensor Ei = accum2(Eii.view({num, 6*ht*wd}), ii, ts).view({t1-t0, 6, ht*wd});
       torch::Tensor E = torch::cat({Ei, Eij}, 0);
 
       SparseBlock S = schur_block(E, Q, w, ii_exp, jj_exp, kk_exp, t0, t1);
