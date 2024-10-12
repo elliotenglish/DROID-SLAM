@@ -63,7 +63,7 @@ def corr_index_forward_reference(volume,coords,radius):
   return torch.tensor(corr)
 
 def test_corr_index_forward():
-  def get_values(device="cpu",reference=False,print=False):
+  def get_values(device="cpu",reference=False,prints=False):
     h1=3
     w1=4
     h2=h1
@@ -83,7 +83,7 @@ def test_corr_index_forward():
     # coords=coords*0+1
     #corr=torch.tensor(np.ndarray([b,2*radius+1,2*radius+1,h1,w1]))
 
-    if print:
+    if prints:
       print("volume",volume.shape,volume.dtype,volume)
       print("coords",coords.shape,coords.dtype,coords)
       print("radius",radius)
@@ -104,7 +104,7 @@ def test_corr_index_forward():
 
     corr=corr.to(device=cpu_device)
 
-    if print:
+    if prints:
       print("corr",corr.shape,corr.dtype,corr)
 
     corr=np.array(corr)
@@ -122,5 +122,4 @@ def test_projected_transform_kernel():
   pass
 
 if __name__=="__main__":
-  #pytest.main(["-x",__file__])
-  test_corr_index_forward()
+  pytest.main(["-x",__file__,"-s"])

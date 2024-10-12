@@ -1057,8 +1057,8 @@ void EEt6x6_cuda(
 ///////////////////////////////////////////////////////////
 
 __global__ void Ev6x1_kernel(
-    const torch::PackedTensorAccessor32<float, 3, torch::RestrictPtrTraits> E,
-    const torch::PackedTensorAccessor32<float, 2,torch::RestrictPtrTraits> Q,
+    const torch::PackedTensorAccessor32<float,3,torch::RestrictPtrTraits> E,
+    const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> Q,
     const torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> w,
     const torch::PackedTensorAccessor32<long,2,torch::RestrictPtrTraits> idx,
     torch::PackedTensorAccessor32<float,2,torch::RestrictPtrTraits> v)

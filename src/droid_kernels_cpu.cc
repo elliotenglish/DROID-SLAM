@@ -798,15 +798,84 @@ void EEt6x6_cpu(
     S.packed_accessor32<float,3>());
 }
 
+void Ev6x1_kernel(
+    const torch::PackedTensorAccessor32<float,3> E,
+    const torch::PackedTensorAccessor32<float,2> Q,
+    const torch::PackedTensorAccessor32<float,2> w,
+    const torch::PackedTensorAccessor32<long,2> idx,
+    torch::PackedTensorAccessor32<float,2> v)
+{
+  for(int block_id=0;block_id<idx.size(0);block_id++)
+  {
+    const int D = E.size(2);
+    const int kx = idx[block_id][0];
+
+    float b[6];
+    memset(b,0,6*sizeof(float));
+
+    for(int k=0;k<D;k++)
+    {
+      const float q_w = Q[kx][k] * w[kx][k];
+      for (int n=0; n<6; n++) {
+        b[n] += q_w * E[block_id][n][k];
+      }
+    }
+
+    for (int n=0; n<6; n++) {
+      v[block_id][n] += b[n];
+    }
+  }
+}
+
 void Ev6x1_cpu(
   const torch::Tensor& E,
   const torch::Tensor& Q,
   const torch::Tensor& w,
   const torch::Tensor& idx,
-  torch::Tensor& v);
+  torch::Tensor& v)
+{
+  Ev6x1_kernel(
+    E.packed_accessor32<float,3>(),
+    Q.packed_accessor32<float,2>(),
+    w.packed_accessor32<float,2>(),
+    idx.packed_accessor32<long,2>(),
+    v.packed_accessor32<float,2>());
+}
+
+void EvT6x1_kernel(
+  const torch::PackedTensorAccessor32<float,3> E,
+  const torch::PackedTensorAccessor32<float,2> x,
+  const torch::PackedTensorAccessor32<long,1> idx,
+  torch::PackedTensorAccessor32<float,2> w)
+{
+  for(int block_id=0;block_id<idx.size(0);block_id++)
+  {
+    const int D = E.size(2);
+    const int ix = idx[block_id];
+
+    if (idx[block_id] <= 0 || idx[block_id] >= x.size(0))
+      continue;
+
+    for(int k=0;k<D;k++)
+    {
+      float dw = 0;
+      for (int n=0; n<6; n++) {
+        dw += E[block_id][n][k] * x[ix][n];
+      }
+      w[block_id][k] = dw;
+    }
+  }
+}
 
 void EvT6x1_cpu(
   const torch::Tensor& E,
   const torch::Tensor& x,
   const torch::Tensor& idx,
-  torch::Tensor& w);
+  torch::Tensor& w)
+{
+  EvT6x1_kernel(
+    E.packed_accessor32<float,3>(),
+    x.packed_accessor32<float,2>(),
+    idx.packed_accessor32<long,1>(),
+    w.packed_accessor32<float,2>());
+}

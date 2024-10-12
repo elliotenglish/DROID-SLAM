@@ -269,7 +269,7 @@ if (poses.device().type() == torch::DeviceType::CPU) {
   }
 #if PORTABLE_EXTENSION_CUDA_ENABLED
   if (poses.device().type() == torch::DeviceType::CUDA) {
-    pose_retr_cpu(poses,dx,t0,t1);
+    pose_retr_cuda(poses,dx,t0,t1);
   }
 #endif
 }
@@ -313,10 +313,12 @@ void EEt6x6(
 {
   if (E.device().type() == torch::DeviceType::CPU) {
     EEt6x6_cpu(E,Q,idx,S);
+    return;
   }
 #if PORTABLE_EXTENSION_CUDA_ENABLED
   if (E.device().type() == torch::DeviceType::CUDA) {
     EEt6x6_cuda(E,Q,idx,S);
+    return;
   }
 #endif
   assert_not_implemented();
@@ -331,10 +333,12 @@ void Ev6x1(
 {
   if (E.device().type() == torch::DeviceType::CPU) {
     Ev6x1_cpu(E,Q,w,idx,v);
+    return;
   }
 #if PORTABLE_EXTENSION_CUDA_ENABLED
   if (E.device().type() == torch::DeviceType::CUDA) {
     Ev6x1_cuda(E,Q,w,idx,v);
+    return;
   }
 #endif
   assert_not_implemented();
@@ -348,10 +352,12 @@ void EvT6x1(
 {
   if (E.device().type() == torch::DeviceType::CPU) {
     EvT6x1_cpu(E,x,idx,w);
+    return;
   }
 #if PORTABLE_EXTENSION_CUDA_ENABLED
   if (E.device().type() == torch::DeviceType::CUDA) {
     EvT6x1_cuda(E,x,idx,w);
+    return;
   }
 #endif
   assert_not_implemented();

@@ -5,6 +5,7 @@
 #define assert_not_implemented() \
 { \
   printf("Not implemented\n"); \
+  printf("%s:%d\n",__FILE__,__LINE__); \
   exit(1); \
 }
 
