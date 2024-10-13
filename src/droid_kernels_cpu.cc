@@ -710,7 +710,7 @@ void disp_retr_kernel(
   const torch::PackedTensorAccessor32<float,2> dz,
   const torch::PackedTensorAccessor32<long,1> inds)
 {
-  for(int block_id=0;block_id<disps.size(0);block_id++)
+  for(int block_id=0;block_id<inds.size(0);block_id++)
   {
     const int i = inds[block_id];
     const int ht = disps.size(1);

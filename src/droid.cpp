@@ -576,7 +576,7 @@ SparseBlock schur_block(torch::Tensor E,
     torch::TensorOptions().dtype(torch::kInt64)).to(E.device().type()).view({-1, 3});
 
   torch::Tensor jx_dev = torch::stack({kk_cpu}, -1)
-    .to(torch::kCUDA).to(torch::kInt64);
+    .to(E.device()).to(torch::kInt64);
 
   torch::Tensor ii2_cpu = torch::from_blob(ii_list.data(), {long(ii_list.size())}, 
     torch::TensorOptions().dtype(torch::kInt64)).view({-1});
