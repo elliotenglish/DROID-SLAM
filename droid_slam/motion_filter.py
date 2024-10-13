@@ -12,7 +12,7 @@ from .modules.corr import CorrBlock
 class MotionFilter:
     """ This class is used to filter incoming frames and extract features """
 
-    def __init__(self, net, video, thresh=2.5, device="cuda:0"):
+    def __init__(self, device, net, video, thresh=2.5):
         
         # split net modules
         self.cnet = net.cnet
@@ -29,18 +29,18 @@ class MotionFilter:
         self.MEAN = torch.as_tensor([0.485, 0.456, 0.406], device=self.device)[:, None, None]
         self.STDV = torch.as_tensor([0.229, 0.224, 0.225], device=self.device)[:, None, None]
         
-    @torch.cuda.amp.autocast(enabled=True)
+    #@torch.cuda.amp.autocast(enabled=True)
     def __context_encoder(self, image):
         """ context features """
         net, inp = self.cnet(image).split([128,128], dim=2)
         return net.tanh().squeeze(0), inp.relu().squeeze(0)
 
-    @torch.cuda.amp.autocast(enabled=True)
+    #@torch.cuda.amp.autocast(enabled=True)
     def __feature_encoder(self, image):
         """ features for correlation volume """
         return self.fnet(image).squeeze(0)
 
-    @torch.cuda.amp.autocast(enabled=True)
+    #@torch.cuda.amp.autocast(enabled=True)
     @torch.no_grad()
     def track(self, tstamp, image, depth=None, intrinsics=None):
         """ main update operation - run on every frame in video """
@@ -87,7 +87,7 @@ class MotionFilter:
 # class MotionFilter:
 #     """ This class is used to filter incoming frames and extract features """
 
-#     def __init__(self, net, video, thresh=2.5, device="cuda:0"):
+#     def __init__(self, device, net, video, thresh=2.5):
         
 #         # split net modules
 #         self.cnet = net.cnet
@@ -104,19 +104,19 @@ class MotionFilter:
 #         self.MEAN = torch.as_tensor([0.485, 0.456, 0.406], device=self.device)[:, None, None]
 #         self.STDV = torch.as_tensor([0.229, 0.224, 0.225], device=self.device)[:, None, None]
         
-#     @torch.cuda.amp.autocast(enabled=True)
+#     #@torch.cuda.amp.autocast(enabled=True)
 #     def __context_encoder(self, image):
 #         """ context features """
 #         x = self.cnet(image)
 #         net, inp = self.cnet(image).split([128,128], dim=2)
 #         return net.tanh().squeeze(0), inp.relu().squeeze(0)
 
-#     @torch.cuda.amp.autocast(enabled=True)
+#     #@torch.cuda.amp.autocast(enabled=True)
 #     def __feature_encoder(self, image):
 #         """ features for correlation volume """
 #         return self.fnet(image).squeeze(0)
 
-#     @torch.cuda.amp.autocast(enabled=True)
+#     #@torch.cuda.amp.autocast(enabled=True)
 #     @torch.no_grad()
 #     def track(self, tstamp, image, depth=None, intrinsics=None):
 #         """ main update operation - run on every frame in video """

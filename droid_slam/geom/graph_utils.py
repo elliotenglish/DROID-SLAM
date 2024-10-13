@@ -23,7 +23,7 @@ def graph_to_edge_list(graph):
 def keyframe_indicies(graph):
     return torch.as_tensor([u for u in graph])
 
-def meshgrid(m, n, device='cuda'):
+def meshgrid(m, n, device):
     ii, jj = torch.meshgrid(torch.arange(m), torch.arange(n))
     return ii.reshape(-1).to(device), jj.reshape(-1).to(device)
 

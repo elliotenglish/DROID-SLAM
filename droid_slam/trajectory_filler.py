@@ -12,7 +12,7 @@ from .geom import projective_ops as pops
 class PoseTrajectoryFiller:
     """ This class is used to fill in non-keyframe poses """
 
-    def __init__(self, net, video, device="cuda:0"):
+    def __init__(self, device, net, video):
         
         # split net modules
         self.cnet = net.cnet
@@ -27,7 +27,7 @@ class PoseTrajectoryFiller:
         self.MEAN = torch.as_tensor([0.485, 0.456, 0.406], device=self.device)[:, None, None]
         self.STDV = torch.as_tensor([0.229, 0.224, 0.225], device=self.device)[:, None, None]
         
-    @torch.cuda.amp.autocast(enabled=True)
+    #@torch.cuda.amp.autocast(enabled=True)
     def __feature_encoder(self, image):
         """ features for correlation volume """
         return self.fnet(image)
@@ -35,7 +35,7 @@ class PoseTrajectoryFiller:
     def __fill(self, tstamps, images, intrinsics):
         """ fill operator """
 
-        tt = torch.as_tensor(tstamps, device="cuda")
+        tt = torch.as_tensor(tstamps, device=self.device)
         images = torch.stack(images, 0)
         intrinsics = torch.stack(intrinsics, 0)
         inputs = images[:,:,[2,1,0]].to(self.device) / 255.0
@@ -65,8 +65,8 @@ class PoseTrajectoryFiller:
         self.video[N:N+M] = (tt, images[:,0], Gs.data, 1, None, intrinsics / 8.0, fmap)
 
         graph = FactorGraph(self.video, self.update)
-        graph.add_factors(t0.cuda(), torch.arange(N, N+M).cuda())
-        graph.add_factors(t1.cuda(), torch.arange(N, N+M).cuda())
+        graph.add_factors(t0.to(self.device), torch.arange(N, N+M).to(self.device))
+        graph.add_factors(t1.to(self.device), torch.arange(N, N+M).to(self.device))
 
         for itr in range(6):
             graph.update(N, N+M, motion_only=True)

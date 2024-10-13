@@ -50,10 +50,11 @@ def create_point_actor(points, colors):
     point_cloud.colors = o3d.utility.Vector3dVector(colors)
     return point_cloud
 
-def droid_visualization(video, device="cuda:0"):
+def droid_visualization(video):
     """ DROID visualization frontend """
 
-    torch.cuda.set_device(device)
+    #device=video.device
+    #torch.cuda.set_device(device)
     droid_visualization.video = video
     droid_visualization.cameras = {}
     droid_visualization.points = {}

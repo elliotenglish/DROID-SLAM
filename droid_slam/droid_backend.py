@@ -7,7 +7,7 @@ from .factor_graph import FactorGraph
 
 
 class DroidBackend:
-    def __init__(self, net, video, args):
+    def __init__(self, device, net, video, args):
         self.video = video
         self.update_op = net.update
 
