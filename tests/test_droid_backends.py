@@ -16,7 +16,7 @@ def evaluate_compare_cpu_gpu(get_values_func,prints=False):
   if prints: print("vals_gpu",vals_gpu)
   error=vals_cpu-vals_gpu
   error_linf=np.abs(error).max()
-  #print(error_linf)
+  print(f"error_linf={error_linf}")
   assert (error_linf<tolerance).all()
 
 def corr_index_forward_reference(volume,coords,radius):
@@ -119,6 +119,11 @@ def test_corr_index_forward():
 
   evaluate_compare_cpu_gpu(get_values)
 
+def test_iproj():
+  def get_values(device,prints=False):
+    pass
+  pass
+
 def test_accum():
   def get_values(device,prints=False):
     n=21
@@ -130,6 +135,41 @@ def test_accum():
 
     out=droid_backends.accum(inps,ptrs,idxs)
     return out
+
+  evaluate_compare_cpu_gpu(get_values)
+
+def test_pose_retr():
+  def get_values(device,prints=False):
+    num=5
+    gen=np.random.default_rng(5432)
+    poses0=torch.tensor(gen.uniform(-1,1,size=[num,7]).astype(np.float32)).to(device=device)
+    dx=torch.tensor(gen.uniform(-1,1,size=[2,6]).astype(np.float32)).to(device=device)
+    
+    poses=poses0.clone().detach()
+    droid_backends.pose_retr(poses,dx,1,3);
+    assert (poses!=poses0).any()
+
+    return poses
+  
+  evaluate_compare_cpu_gpu(get_values)
+
+def test_disp_retr():
+  def get_values(device,prints=False):
+    num=5
+    w=16
+    h=12
+    ni=2
+    gen=np.random.default_rng(5432)
+    disps0=torch.tensor(gen.uniform(-1,1,size=[num,h,w]).astype(np.float32)).to(device=device)
+    dz=torch.tensor(gen.uniform(-1,1,size=[ni,w*h]).astype(np.float32)).to(device=device)
+    idxs=torch.tensor(np.array([3,1]).astype(np.long)).to(device=device)
+    
+    disps=disps0.clone().detach()
+    droid_backends.disp_retr(disps,dz,idxs)
+
+    assert (disps!=disps0).any()
+
+    return disps
 
   evaluate_compare_cpu_gpu(get_values)
 

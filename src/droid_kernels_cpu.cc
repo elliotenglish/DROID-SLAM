@@ -682,14 +682,14 @@ void pose_retr_kernel(
   const torch::PackedTensorAccessor32<float,2> dx,
   const int t0, const int t1)
 {
-  for(int k=0;k<poses.size(0);k++)
+  for(int k=t0;k<t1;k++)
   {
     float xi[6], q[4], q1[4], t[3], t1[3];
-    load_pose(poses,k,q,t);
+    load_pose(poses,k,t,q);
     for (int n=0; n<6; n++)
       xi[n] = dx[k-t0][n];
     retrSE3(xi, t, q, t1, q1);
-    store_pose(poses,k,q1,t1);
+    store_pose(poses,k,t1,q1);
   }
 }
 
