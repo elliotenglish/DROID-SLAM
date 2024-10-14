@@ -9,14 +9,15 @@ tolerance=1e-4
 def within_bounds(h,w,H,W):
   return h >= 0 and h < H and w >= 0 and w < W
 
-def evaluate_compare_cpu_gpu(get_values_func):
-  prints=False
+def evaluate_compare_cpu_gpu(get_values_func,prints=False):
   vals_cpu=get_values_func(device="cpu",prints=prints).cpu().numpy()
   if prints: print("vals_cpu",vals_cpu)
   vals_gpu=get_values_func(device="cuda",prints=prints).cpu().numpy()
   if prints: print("vals_gpu",vals_gpu)
   error=vals_cpu-vals_gpu
-  assert (np.abs(error)<tolerance).all()
+  error_linf=np.abs(error).max()
+  #print(error_linf)
+  assert (error_linf<tolerance).all()
 
 def corr_index_forward_reference(volume,coords,radius):
   N,h1,w1,h2,w2=volume.shape
@@ -72,7 +73,7 @@ def corr_index_forward_reference(volume,coords,radius):
   return torch.tensor(corr)
 
 def test_corr_index_forward():
-  def get_values(device="cpu",reference=False,prints=False):
+  def get_values(device,reference=False,prints=False):
     h1=3
     w1=4
     h2=h1
@@ -119,7 +120,7 @@ def test_corr_index_forward():
   evaluate_compare_cpu_gpu(get_values)
 
 def test_accum():
-  def get_values(device="cpu",prints=False):
+  def get_values(device,prints=False):
     n=21
     m=9
     gen=np.random.default_rng(5432)
@@ -129,6 +130,58 @@ def test_accum():
 
     out=droid_backends.accum(inps,ptrs,idxs)
     return out
+
+  evaluate_compare_cpu_gpu(get_values)
+
+def test_EEt6x6():
+  def get_values(device,prints=False):
+    num=5
+    nk=4
+    D=3
+    gen=np.random.default_rng(5432)
+    E=torch.tensor(gen.uniform(-1,1,size=[num,6,D]).astype(np.float32)).to(device)
+    Q=torch.tensor(gen.uniform(-1,1,size=[nk,D]).astype(np.float32)).to(device)
+    idx=torch.tensor(np.array([[0,0,1],[1,2,3]]).astype(np.long)).to(device)
+    S=torch.tensor(np.zeros([num,6,6]).astype(np.float32)).to(device=device)
+
+    droid_backends.EEt6x6(E,Q,idx,S)
+    if prints: print(S)
+    return S
+  
+  evaluate_compare_cpu_gpu(get_values)
+
+def test_Ev6x1():
+  def get_values(device,prints=False):
+    num=5
+    nk=4
+    D=3
+    gen=np.random.default_rng(5432)
+    E=torch.tensor(gen.uniform(-1,1,size=[num,6,D]).astype(np.float32)).to(device)
+    Q=torch.tensor(gen.uniform(-1,1,size=[nk,D]).astype(np.float32)).to(device)
+    w=torch.tensor(gen.uniform(-1,1,size=[nk,D]).astype(np.float32)).to(device)
+    idx=torch.tensor(np.array([[0,1],[1,2]]).astype(np.long)).to(device)
+    v=torch.tensor(np.zeros([num,6]).astype(np.float32)).to(device=device)
+
+    droid_backends.Ev6x1(E,Q,w,idx,v)
+    if prints: print(v)
+    return v
+
+  evaluate_compare_cpu_gpu(get_values)
+
+def test_EvT6x1():
+  def get_values(device,prints=False):
+    num=5
+    gen=np.random.default_rng(5432)
+    ni=4
+    D=3
+    E=torch.tensor(gen.uniform(-1,1,size=[num,6,D]).astype(np.float32)).to(device)
+    x=torch.tensor(gen.uniform(-1,1,size=[ni,6]).astype(np.float32)).to(device)
+    idx=torch.tensor(np.array([2,1,3,0,1]).astype(np.long)).to(device)
+    w=torch.tensor(np.zeros([num,D]).astype(np.float32)).to(device=device)
+
+    droid_backends.EvT6x1(E,x,idx,w)
+    if prints: print(w)
+    return w
 
   evaluate_compare_cpu_gpu(get_values)
 
