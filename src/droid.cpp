@@ -289,6 +289,9 @@ if (dz.device().type() == torch::DeviceType::CPU) {
 #endif
 }
 
+/**
+ * output_i,k = sum(j in [ptrs[i],ptrs[i]-1] inps[idxs[j]][k])
+ */
 torch::Tensor accum(
   const torch::Tensor& inps,
   const torch::Tensor& ptrs,
@@ -720,10 +723,19 @@ std::vector<torch::Tensor> ba(
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   // bundle adjustment kernels
   m.def("ba", &ba, "bundle adjustment");
+
   m.def("frame_distance", &frame_distance, "frame_distance");
   m.def("projmap", &projmap, "projmap");
   m.def("depth_filter", &depth_filter, "depth_filter");
   m.def("iproj", &iproj, "back projection");
+  m.def("projective_transform", &projective_transform,"projective_transform");
+  m.def("pose_retr",&pose_retr,"pose_retr");
+  m.def("disp_retr",&disp_retr,"disp_retr");
+  m.def("accum",&accum,"accum");
+  m.def("EEt6x6",&EEt6x6,"EEt6x6");
+  m.def("Ev6x1",&Ev6x1,"Ev6x1");
+  m.def("EvT6x1",&EvT6x1,"EvT6x1");
+  m.def("accum2",&accum2,"accum2");
 
   // correlation volume kernels
   m.def("altcorr_forward", &altcorr_forward, "ALTCORR forward");

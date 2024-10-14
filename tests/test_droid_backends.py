@@ -9,6 +9,15 @@ tolerance=1e-4
 def within_bounds(h,w,H,W):
   return h >= 0 and h < H and w >= 0 and w < W
 
+def evaluate_compare_cpu_gpu(get_values_func):
+  prints=False
+  vals_cpu=get_values_func(device="cpu",prints=prints).cpu().numpy()
+  if prints: print("vals_cpu",vals_cpu)
+  vals_gpu=get_values_func(device="cuda",prints=prints).cpu().numpy()
+  if prints: print("vals_gpu",vals_gpu)
+  error=vals_cpu-vals_gpu
+  assert (np.abs(error)<tolerance).all()
+
 def corr_index_forward_reference(volume,coords,radius):
   N,h1,w1,h2,w2=volume.shape
   r=radius
@@ -102,24 +111,26 @@ def test_corr_index_forward():
     else:
       corr=droid_backends.corr_index_forward(volume,coords,radius)[0]
 
-    corr=corr.to(device=cpu_device)
-
     if prints:
       print("corr",corr.shape,corr.dtype,corr)
 
-    corr=np.array(corr)
-
     return corr
 
-  vals_cpu=get_values(device="cpu",reference=False)
-  #print("vals_cpu",vals_cpu)
-  vals_gpu=get_values(device="cuda")
-  #print("vals_gpu",vals_gpu)
-  error=vals_cpu-vals_gpu
-  assert (np.abs(error)<tolerance).all()
+  evaluate_compare_cpu_gpu(get_values)
 
-def test_projected_transform_kernel():
-  pass
+def test_accum():
+  def get_values(device="cpu",prints=False):
+    n=21
+    m=9
+    gen=np.random.default_rng(5432)
+    inps=torch.tensor(gen.uniform(-1,1,size=[n,m]).astype(np.float32)).to(device=device)
+    idxs=torch.tensor(np.array([0,4,3,5,6,7,8,1,10,16,19]).astype(np.long)).to(device=device)
+    ptrs=torch.tensor(np.array([0,3,7,10]).astype(np.long)).to(device=device)
+
+    out=droid_backends.accum(inps,ptrs,idxs)
+    return out
+
+  evaluate_compare_cpu_gpu(get_values)
 
 if __name__=="__main__":
   pytest.main(["-x",__file__,"-s"])
