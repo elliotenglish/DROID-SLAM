@@ -3,6 +3,7 @@ import droid_backends
 import numpy as np
 import math
 import pytest
+import droid_slam.utilities
 
 tolerance=1e-4
 
@@ -119,10 +120,36 @@ def test_corr_index_forward():
 
   evaluate_compare_cpu_gpu(get_values)
 
+def generate_poses(gen,num):
+  poses=gen.uniform(-1,1,size=[num,7])
+  poses[:,3:]/=np.linalg.norm(poses[:,3:],axis=1)[...,None]
+  return poses
+
+def test_projective_transform():
+  pass
+
+def test_projmap():
+  pass
+
+def test_frame_distance():
+  pass
+
+def test_depth_filter():
+  pass
+
 def test_iproj():
   def get_values(device,prints=False):
-    pass
-  pass
+    num=9
+    w,h=16,12
+    gen=np.random.default_rng(5432)
+    poses=torch.tensor(generate_poses(gen,num).astype(np.float32)).to(device=device)
+    disps=torch.tensor(gen.uniform(.1,.2,size=[num,h,w]).astype(np.float32)).to(device=device)
+    intrinsics=torch.tensor(np.array(droid_slam.utilities.get_default_intrinsics(w,h)).astype(np.float32)).to(device=device)
+
+    points=droid_backends.iproj(poses,disps,intrinsics)
+    return points
+
+  evaluate_compare_cpu_gpu(get_values)
 
 def test_accum():
   def get_values(device,prints=False):
@@ -142,9 +169,9 @@ def test_pose_retr():
   def get_values(device,prints=False):
     num=5
     gen=np.random.default_rng(5432)
-    poses0=torch.tensor(gen.uniform(-1,1,size=[num,7]).astype(np.float32)).to(device=device)
+    poses0=torch.tensor(generate_poses(gen,num).astype(np.float32)).to(device=device)
     dx=torch.tensor(gen.uniform(-1,1,size=[2,6]).astype(np.float32)).to(device=device)
-    
+
     poses=poses0.clone().detach()
     droid_backends.pose_retr(poses,dx,1,3);
     assert (poses!=poses0).any()

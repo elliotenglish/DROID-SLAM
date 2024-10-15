@@ -58,3 +58,7 @@ def get_default_params():
     "stereo":False
   }
   return params
+
+def get_default_intrinsics(w,h):
+  fxy=max(w,h)
+  return [fxy,fxy,w,h]
