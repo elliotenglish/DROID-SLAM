@@ -10,6 +10,14 @@ tolerance=1e-4
 def within_bounds(h,w,H,W):
   return h >= 0 and h < H and w >= 0 and w < W
 
+def compute_stats(x):
+  return {"shape":x.shape,
+          "mean":float(x.sum()/x.size),
+          "stddev":float(x.std()),
+          "min":float(x.min()),
+          "max":float(x.max()),
+          "nnz":int((x!=0).sum())}
+
 def evaluate_compare_cpu_gpu(get_values_func,prints=False):
   vals_cpu=get_values_func(device="cpu",prints=prints).cpu().numpy()
   if prints: print("vals_cpu",vals_cpu)
@@ -17,6 +25,8 @@ def evaluate_compare_cpu_gpu(get_values_func,prints=False):
   if prints: print("vals_gpu",vals_gpu)
   error=vals_cpu-vals_gpu
   error_linf=np.abs(error).max()
+  print("vals_gpu stats",compute_stats(vals_gpu))
+  print("vals_cpu stats",compute_stats(vals_cpu))
   print(f"error_linf={error_linf}")
   assert (error_linf<tolerance).all()
 
@@ -135,7 +145,22 @@ def test_frame_distance():
   pass
 
 def test_depth_filter():
-  pass
+  def get_values(device,prints=False):
+    num=4
+    w,h=8,6
+    ni=3
+    gen=np.random.default_rng(5432)
+    poses=torch.tensor(generate_poses(gen,num).astype(np.float32)).to(device=device)
+    disps=torch.tensor(gen.uniform(.1,.2,size=[num,h,w]).astype(np.float32)).to(device=device)
+    intrinsics=torch.tensor(np.array(droid_slam.utilities.get_default_intrinsics(w,h)).astype(np.float32)).to(device=device)
+    inds=torch.tensor(np.array([0,2]).astype(np.long)).to(device=device)
+    thresh=torch.tensor(np.array([.1]*ni).astype(np.float32)).to(device=device)
+
+    counter=droid_backends.depth_filter(poses,disps,intrinsics,inds,thresh)
+    #print(counter)
+    return counter
+  
+  evaluate_compare_cpu_gpu(get_values)
 
 def test_iproj():
   def get_values(device,prints=False):

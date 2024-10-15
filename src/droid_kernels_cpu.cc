@@ -482,9 +482,8 @@ void depth_filter_kernel(
       int ix = static_cast<int>(inds[block_id]);
       int jx = (neigh_id < 3) ? ix - neigh_id - 1 : ix + neigh_id;
 
-      //Probably not relevant on CPU.
       if (jx < 0 || jx >= num) {
-        return;
+        continue;
       }
 
       const float t = thresh[block_id];
