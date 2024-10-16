@@ -23,7 +23,6 @@ def image_to_tensor(image):
   _,_,h1,w1=get_target_shape(image)
 
   image = cv2.resize(image, (w1, h1))
-  image = image[:h1-h1%8, :w1-w1%8]
   image = torch.as_tensor(image).permute(2, 0, 1)
 
   return image

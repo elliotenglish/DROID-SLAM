@@ -38,10 +38,11 @@ void load_relative_pose(
   const int ix,
   const int jx,
   float ti[],float tj[],float tij[],
-  float qi[],float qj[],float qij[])
+  float qi[],float qj[],float qij[],
+  const float stereo_offset=0)
 {
   if (ix == jx) {
-    tij[0] =  -0.1;
+    tij[0] =  stereo_offset;
     tij[1] =     0;
     tij[2] =     0;
     qij[0] =     0;
@@ -79,7 +80,7 @@ void projective_transform_kernel(
     torch::PackedTensorAccessor32<float,2> bz)
 {
   int ht=disps.size(1);
-  int wd=poses.size(2);
+  int wd=disps.size(2);
 
   //For each ii/jj frame pair/graph edge (i.e. block_id)
   int num_blocks=ii.size(0);
@@ -92,7 +93,7 @@ void projective_transform_kernel(
     load_intrinsics(intrinsics,fx,fy,cx,cy);
     float ti[3], tj[3], tij[3];
     float qi[4], qj[4], qij[4];
-    load_relative_pose(poses,ix,jx,ti,tj,tij,qi,qj,qij);
+    load_relative_pose(poses,ix,jx,ti,tj,tij,qi,qj,qij,-0.1);
 
     int l;//used as a counter in a few places;
     int k=-1;
@@ -100,6 +101,8 @@ void projective_transform_kernel(
       for(int j=0;j<wd;j++)
       {
         k++;
+
+        // if(i!=3 || j!=2) continue;
 
         // jacobians
         float Jx[12];
@@ -157,6 +160,9 @@ void projective_transform_kernel(
         Cii[block_id][k] = wu * Jz * Jz;
         bz[block_id][k] = wu * ru * Jz;
 
+        // printf("x k=%d i=%d j=%d Jj=(%g,%g,%g,%g,%g,%g) wu=%g wv=%g ru=%g rv=%g Jz=%g\n",
+        //   k,i,j,Jj[0],Jj[1],Jj[2],Jj[3],Jj[4],Jj[5],wu,wv,ru,rv,Jz);
+
         if (ix == jx) wu = 0;
 
         adjSE3(tij, qij, Jj, Ji);
@@ -176,6 +182,7 @@ void projective_transform_kernel(
 
           Eii[block_id][n][k] = wu * Jz * Ji[n];
           Eij[block_id][n][k] = wu * Jz * Jj[n];
+          // printf("[%d][%d][%d] Eii=%g Eij=%g\n",block_id,n,k,Eii[block_id][n][k],Eij[block_id][n][k]);
         }
 
 
@@ -189,6 +196,9 @@ void projective_transform_kernel(
         Jz = fy * (tij[1] * d - tij[2] * (y * d2));
         Cii[block_id][k] += wv * Jz * Jz;
         bz[block_id][k] += wv * rv * Jz;
+
+        // printf("x k=%d i=%d j=%d Jj=(%g,%g,%g,%g,%g,%g) wu=%g wv=%g ru=%g rv=%g Jz=%g\n",
+        //   k,i,j,Jj[0],Jj[1],Jj[2],Jj[3],Jj[4],Jj[5],wu,wv,ru,rv,Jz);
 
         if (ix == jx) wv = 0;
 
@@ -209,6 +219,7 @@ void projective_transform_kernel(
 
           Eii[block_id][n][k] += wv * Jz * Ji[n];
           Eij[block_id][n][k] += wv * Jz * Jj[n];
+          // printf("[%d][%d][%d] Eii=%g Eij=%g\n",block_id,n,k,Eii[block_id][n][k],Eij[block_id][n][k]);
         }
 
         //Reductions
@@ -217,24 +228,44 @@ void projective_transform_kernel(
           vs[1][block_id][n]+=vj[n];
         }
 
+        // l=0;
+        // float sum=0;
+        // for (int n=0; n<12; n++)
+        //   for (int m=0; m<=n; m++)
+        //   {
+        //     if(!(l%11))
+        //       printf("hij[%d]=%g\n",l,hij[l]);
+        //     l++;
+        //     sum+=hij[l];
+        //   }
+        // printf("sum=%g\n",sum);
+
         l=0;
         for (int n=0; n<12; n++)
           for (int m=0; m<=n; m++) {
+            float sdata = hij[l];
+
             if (n<6 && m<6) {
-              Hs[0][block_id][n][m] += hij[l];
-              Hs[0][block_id][m][n] += hij[l];
+              Hs[0][block_id][n][m] += sdata;
+              if(n!=m)
+                Hs[0][block_id][m][n] += sdata;
             }
             else if (n >=6 && m<6) {
-              Hs[1][block_id][m][n-6] += hij[l];
-              Hs[2][block_id][n-6][m] += hij[l];
+              Hs[1][block_id][m][n-6] += sdata;
+              Hs[2][block_id][n-6][m] += sdata;
             }
             else {
-              Hs[3][block_id][n-6][m-6] += hij[l];
-              Hs[3][block_id][m-6][n-6] += hij[l];
+              Hs[3][block_id][n-6][m-6] += sdata;
+              if(n!=m)
+                Hs[3][block_id][m-6][n-6] += sdata;
             }
+
+            l++;
           }
       }
   }
+
+  // printf("Hs0=%g\n",Hs[0][0][0][0]);
 }
 
 void projective_transform_cpu(

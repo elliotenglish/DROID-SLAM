@@ -165,6 +165,8 @@ __global__ void projective_transform_kernel(
     const int i = k / wd;
     const int j = k % wd;
 
+    // if(i!=3 || j!=2) continue;
+
     const float u = static_cast<float>(j);
     const float v = static_cast<float>(i);
     
@@ -202,6 +204,9 @@ __global__ void projective_transform_kernel(
     Cii[block_id][k] = wu * Jz * Jz;
     bz[block_id][k] = wu * ru * Jz;
 
+    // printf("x k=%d i=%d j=%d Jj=(%g,%g,%g,%g,%g,%g) wu=%g wv=%g ru=%g rv=%g Jz=%g\n",
+    //   k,i,j,Jj[0],Jj[1],Jj[2],Jj[3],Jj[4],Jj[5],wu,wv,ru,rv,Jz);
+
     if (ix == jx) wu = 0;
 
     adjSE3(tij, qij, Jj, Ji);
@@ -221,6 +226,7 @@ __global__ void projective_transform_kernel(
 
       Eii[block_id][n][k] = wu * Jz * Ji[n];
       Eij[block_id][n][k] = wu * Jz * Jj[n];
+      // printf("[%d][%d][%d] Eii=%g Eij=%g\n",block_id,n,k,Eii[block_id][n][k],Eij[block_id][n][k]);
     }
 
 
@@ -234,6 +240,9 @@ __global__ void projective_transform_kernel(
     Jz = fy * (tij[1] * d - tij[2] * (y * d2));
     Cii[block_id][k] += wv * Jz * Jz;
     bz[block_id][k] += wv * rv * Jz;
+
+    // printf("x k=%d i=%d j=%d Jj=(%g,%g,%g,%g,%g,%g) wu=%g wv=%g ru=%g rv=%g Jz=%g\n",
+    //   k,i,j,Jj[0],Jj[1],Jj[2],Jj[3],Jj[4],Jj[5],wu,wv,ru,rv,Jz);
 
     if (ix == jx) wv = 0;
 
@@ -254,9 +263,20 @@ __global__ void projective_transform_kernel(
 
       Eii[block_id][n][k] += wv * Jz * Ji[n];
       Eij[block_id][n][k] += wv * Jz * Jj[n];
+      // printf("[%d][%d][%d] Eii=%g Eij=%g\n",block_id,n,k,Eii[block_id][n][k],Eij[block_id][n][k]);
     }
 
-
+    // l=0;
+    // float sum=0;
+    // for (int n=0; n<12; n++)
+    //   for (int m=0; m<=n; m++)
+    //   {
+    //     if(!(l%11))
+    //       printf("hij[%d]=%g\n",l,hij[l]);
+    //     l++;
+    //     sum+=hij[l];
+    //   }
+    // printf("sum=%g\n",sum);
   }
 
   __syncthreads();
@@ -286,6 +306,8 @@ __global__ void projective_transform_kernel(
       blockReduce(sdata);
 
       if (threadIdx.x == 0) {
+        // if(!(l%11))
+        //   printf("sdata[%d]=%g\n",l,sdata[0]);
         if (n<6 && m<6) {
           Hs[0][block_id][n][m] = sdata[0];
           Hs[0][block_id][m][n] = sdata[0];
@@ -298,6 +320,8 @@ __global__ void projective_transform_kernel(
           Hs[3][block_id][n-6][m-6] = sdata[0];
           Hs[3][block_id][m-6][n-6] = sdata[0];
         }
+
+        // printf("Hs0=%g\n",Hs[0][0][0][0]);
       }
 
       l++;

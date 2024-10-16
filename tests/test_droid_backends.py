@@ -18,17 +18,27 @@ def compute_stats(x):
           "max":float(x.max()),
           "nnz":int((x!=0).sum())}
 
-def evaluate_compare_cpu_gpu(get_values_func,prints=False):
-  vals_cpu=get_values_func(device="cpu",prints=prints).cpu().numpy()
-  if prints: print("vals_cpu",vals_cpu)
-  vals_gpu=get_values_func(device="cuda",prints=prints).cpu().numpy()
-  if prints: print("vals_gpu",vals_gpu)
-  error=vals_cpu-vals_gpu
-  error_linf=np.abs(error).max()
-  print("vals_gpu stats",compute_stats(vals_gpu))
-  print("vals_cpu stats",compute_stats(vals_cpu))
-  print(f"error_linf={error_linf}")
-  assert (error_linf<tolerance).all()
+def evaluate_compare_cpu_cuda(get_values_func,prints=False):
+  print("----------- evaluate_compare_cpu_cuda -----------")
+  print("running cpu")
+  vals_cpu_list=get_values_func(device="cpu",prints=prints)
+  if not isinstance(vals_cpu_list,list): vals_cpu_list=[vals_cpu_list]
+  print("running cuda")
+  vals_cuda_list=get_values_func(device="cuda",prints=prints)
+  if not isinstance(vals_cuda_list,list): vals_cuda_list=[vals_cuda_list]
+
+  for idx,_ in enumerate(vals_cpu_list):
+    vals_cpu=vals_cpu_list[idx].cpu().numpy()
+    vals_cuda=vals_cuda_list[idx].cpu().numpy()
+    if prints: print("vals_cpu",vals_cpu)
+    if prints: print("vals_cuda",vals_cuda)
+
+    error=vals_cpu-vals_cuda
+    error_linf=np.abs(error).max()
+    print("vals_cuda stats",compute_stats(vals_cuda))
+    print("vals_cpu stats",compute_stats(vals_cpu))
+    print(f"error_linf={error_linf}")
+    assert (error_linf<tolerance).all()
 
 def corr_index_forward_reference(volume,coords,radius):
   N,h1,w1,h2,w2=volume.shape
@@ -128,7 +138,7 @@ def test_corr_index_forward():
 
     return corr
 
-  evaluate_compare_cpu_gpu(get_values)
+  evaluate_compare_cpu_cuda(get_values)
 
 def generate_poses(gen,num):
   poses=gen.uniform(-1,1,size=[num,7])
@@ -136,13 +146,72 @@ def generate_poses(gen,num):
   return poses
 
 def test_projective_transform():
-  pass
+  def get_values(device,prints=False):
+    num=4
+    w,h=8,6
+    ni=3
+    gen=np.random.default_rng(5432)
+    target=torch.tensor(gen.uniform(-1,1,size=[num,2,h,w]).astype(np.float32)).to(device=device)
+    weight=torch.tensor(gen.uniform(.9,1.1,size=[num,2,h,w]).astype(np.float32)).to(device=device)
+    poses=torch.tensor(generate_poses(gen,num).astype(np.float32)).to(device=device)
+    disps=torch.tensor(gen.uniform(.1,.2,size=[num,h,w]).astype(np.float32)).to(device=device)
+    intrinsics=torch.tensor(np.array(droid_slam.utilities.get_default_intrinsics(w,h)).astype(np.float32)).to(device=device)
+    ii=torch.tensor(np.array([0,2]).astype(np.long)).to(device=device)
+    jj=torch.tensor(np.array([1,2]).astype(np.long)).to(device=device)
+
+    Hs=torch.tensor(np.zeros([4,ni,6,6]).astype(np.float32)).to(device=device)
+    vs=torch.tensor(np.zeros([2,ni,6]).astype(np.float32)).to(device=device)
+    Eii=torch.tensor(np.zeros([ni,6,w*h]).astype(np.float32)).to(device=device)
+    Eij=torch.tensor(np.zeros([ni,6,w*h]).astype(np.float32)).to(device=device)
+    Cii=torch.tensor(np.zeros([ni,w*h]).astype(np.float32)).to(device=device)
+    wi=torch.tensor(np.zeros([ni,w*h]).astype(np.float32)).to(device=device)
+
+    droid_backends.projective_transform(target,weight,poses,disps,intrinsics,ii,jj,Hs,vs,Eii,Eij,Cii,wi)
+    results=[Hs,vs,Eii,Eij,Cii,wi]
+    #print(results)
+
+    return results
+
+  evaluate_compare_cpu_cuda(get_values)
+  # assert False
 
 def test_projmap():
-  pass
+  def get_values(device,prints=False):
+    num=4
+    w,h=8,6
+    ni=3
+    gen=np.random.default_rng(5432)
+    poses=torch.tensor(generate_poses(gen,num).astype(np.float32)).to(device=device)
+    disps=torch.tensor(gen.uniform(.1,.2,size=[num,h,w]).astype(np.float32)).to(device=device)
+    intrinsics=torch.tensor(np.array(droid_slam.utilities.get_default_intrinsics(w,h)).astype(np.float32)).to(device=device)
+    ii=torch.tensor(np.array([0,2]).astype(np.long)).to(device=device)
+    jj=torch.tensor(np.array([1,2]).astype(np.long)).to(device=device)
+
+    results=droid_backends.projmap(poses,disps,intrinsics,ii,jj)
+    #print(results)
+
+    return results
+
+  evaluate_compare_cpu_cuda(get_values)
 
 def test_frame_distance():
-  pass
+  def get_values(device,prints=False):
+    num=4
+    w,h=8,6
+    ni=3
+    gen=np.random.default_rng(5432)
+    poses=torch.tensor(generate_poses(gen,num).astype(np.float32)).to(device=device)
+    disps=torch.tensor(gen.uniform(.1,.2,size=[num,h,w]).astype(np.float32)).to(device=device)
+    intrinsics=torch.tensor(np.array(droid_slam.utilities.get_default_intrinsics(w,h)).astype(np.float32)).to(device=device)
+    ii=torch.tensor(np.array([0,2]).astype(np.long)).to(device=device)
+    jj=torch.tensor(np.array([1,2]).astype(np.long)).to(device=device)
+    beta=.001
+
+    dist=droid_backends.frame_distance(poses,disps,intrinsics,ii,jj,beta)
+
+    return dist
+  
+  evaluate_compare_cpu_cuda(get_values)
 
 def test_depth_filter():
   def get_values(device,prints=False):
@@ -160,7 +229,7 @@ def test_depth_filter():
     #print(counter)
     return counter
   
-  evaluate_compare_cpu_gpu(get_values)
+  evaluate_compare_cpu_cuda(get_values)
 
 def test_iproj():
   def get_values(device,prints=False):
@@ -174,7 +243,7 @@ def test_iproj():
     points=droid_backends.iproj(poses,disps,intrinsics)
     return points
 
-  evaluate_compare_cpu_gpu(get_values)
+  evaluate_compare_cpu_cuda(get_values)
 
 def test_accum():
   def get_values(device,prints=False):
@@ -188,7 +257,7 @@ def test_accum():
     out=droid_backends.accum(inps,ptrs,idxs)
     return out
 
-  evaluate_compare_cpu_gpu(get_values)
+  evaluate_compare_cpu_cuda(get_values)
 
 def test_pose_retr():
   def get_values(device,prints=False):
@@ -203,7 +272,7 @@ def test_pose_retr():
 
     return poses
   
-  evaluate_compare_cpu_gpu(get_values)
+  evaluate_compare_cpu_cuda(get_values)
 
 def test_disp_retr():
   def get_values(device,prints=False):
@@ -223,7 +292,7 @@ def test_disp_retr():
 
     return disps
 
-  evaluate_compare_cpu_gpu(get_values)
+  evaluate_compare_cpu_cuda(get_values)
 
 def test_EEt6x6():
   def get_values(device,prints=False):
@@ -240,7 +309,7 @@ def test_EEt6x6():
     if prints: print(S)
     return S
   
-  evaluate_compare_cpu_gpu(get_values)
+  evaluate_compare_cpu_cuda(get_values)
 
 def test_Ev6x1():
   def get_values(device,prints=False):
@@ -258,7 +327,7 @@ def test_Ev6x1():
     if prints: print(v)
     return v
 
-  evaluate_compare_cpu_gpu(get_values)
+  evaluate_compare_cpu_cuda(get_values)
 
 def test_EvT6x1():
   def get_values(device,prints=False):
@@ -275,7 +344,7 @@ def test_EvT6x1():
     if prints: print(w)
     return w
 
-  evaluate_compare_cpu_gpu(get_values)
+  evaluate_compare_cpu_cuda(get_values)
 
 if __name__=="__main__":
   pytest.main(["-x",__file__,"-s"])
