@@ -162,18 +162,24 @@ class DepthVideo:
         if bidirectional:
 
             poses = self.poses[:self.counter.value].clone()
+            # print(f"poses={poses.sum()}")
 
             d1 = droid_backends.frame_distance(
                 poses, self.disps, self.intrinsics[0], ii, jj, beta)
+                # poses.cuda(), self.disps.cuda(), self.intrinsics[0].cuda(), ii.cuda(), jj.cuda(), beta).to(self.device)
 
             d2 = droid_backends.frame_distance(
                 poses, self.disps, self.intrinsics[0], jj, ii, beta)
+                # poses.cuda(), self.disps.cuda(), self.intrinsics[0].cuda(), jj.cuda(), ii.cuda(), beta).to(self.device)
+
+            # print(f"d1={d1.sum()} d2={d2.sum()}")
 
             d = .5 * (d1 + d2)
 
         else:
             d = droid_backends.frame_distance(
                 self.poses, self.disps, self.intrinsics[0], ii, jj, beta)
+                # self.poses.cuda(), self.disps.cuda(), self.intrinsics[0].cuda(), ii.cuda(), jj.cuda(), beta).to(self.device)
 
         if return_matrix:
             return d.reshape(N, N)
@@ -188,6 +194,13 @@ class DepthVideo:
             # [t0, t1] window of bundle adjustment optimization
             if t1 is None:
                 t1 = max(ii.max().item(), jj.max().item()) + 1
+
+            # poses0=self.poses.cuda()
+            # disps0=self.disps.cuda()
+            # droid_backends.ba(poses0, disps0, self.intrinsics[0].cuda(), self.disps_sens.cuda(),
+            #     target.cuda(), weight.cuda(), eta.cuda(), ii.cuda(), jj.cuda(), t0, t1, itrs, lm, ep, motion_only)
+            # self.poses.copy_(poses0)
+            # self.disps.copy_(disps0)
 
             droid_backends.ba(self.poses, self.disps, self.intrinsics[0], self.disps_sens,
                 target, weight, eta, ii, jj, t0, t1, itrs, lm, ep, motion_only)

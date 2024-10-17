@@ -53,6 +53,8 @@ class MotionFilter:
         inputs = image[None, :, [2,1,0]].to(self.device) / 255.0
         inputs = inputs.sub_(self.MEAN).div_(self.STDV)
 
+        # print(inputs",inputs.sum())
+
         # extract features
         gmap = self.__feature_encoder(inputs)
 
@@ -61,6 +63,10 @@ class MotionFilter:
             net, inp = self.__context_encoder(inputs[:,[0]])
             self.net, self.inp, self.fmap = net, inp, gmap
             self.video.append(tstamp, image[0], Id, 1.0, depth, intrinsics / 8.0, gmap, net[0,0], inp[0,0])
+
+            #print(gmap[0:2,0:2,0:2,0:2])
+            # print(gmap",gmap.sum())
+            #raise Exception("test")
 
         ### only add new frame if there is enough motion ###
         else:                
@@ -71,6 +77,8 @@ class MotionFilter:
             # approximate flow magnitude using 1 update iteration
             _, delta, weight = self.update(self.net[None], self.inp[None], corr)
 
+            # print(delta",delta.norm(dim=-1).mean())
+
             # check motion magnitue / add new frame to video
             if delta.norm(dim=-1).mean().item() > self.thresh:
                 self.count = 0
@@ -78,6 +86,9 @@ class MotionFilter:
                 self.net, self.inp, self.fmap = net, inp, gmap
                 self.video.append(tstamp, image[0], None, None, depth, intrinsics / 8.0, gmap, net[0], inp[0])
 
+                #print(gmap[0:2,0:2,0:2,0:2])
+                # print(gmap",gmap.sum())
+                # raise Exception("test")
             else:
                 self.count += 1
 

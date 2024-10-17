@@ -99,7 +99,7 @@ def test_corr_index_forward():
     w1=4
     h2=h1
     w2=w1
-    b=1
+    b=2
 
     gen=np.random.default_rng(5432)
 

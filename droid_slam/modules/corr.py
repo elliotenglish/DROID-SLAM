@@ -10,6 +10,9 @@ class CorrSampler(torch.autograd.Function):
         ctx.save_for_backward(volume,coords)
         ctx.radius = radius
         corr, = droid_backends.corr_index_forward(volume, coords, radius)
+        # corr, = droid_backends.corr_index_forward(volume.cuda(), coords.cuda(), radius)
+        # corr=corr.to(volume.device)
+        # print(f"volume={volume.sum()},{volume.shape} coords={coords.sum()},{coords.shape} radius={radius} corr={corr.sum()},{corr.shape}")
         return corr
 
     @staticmethod
@@ -76,7 +79,10 @@ class CorrLayer(torch.autograd.Function):
     def forward(ctx, fmap1, fmap2, coords, r):
         ctx.r = r
         ctx.save_for_backward(fmap1, fmap2, coords)
+        assert False
         corr, = droid_backends.altcorr_forward(fmap1, fmap2, coords, ctx.r)
+        # corr, = droid_backends.altcorr_forward(fmap1.cuda(), fmap2.cuda(), coords.cuda(), ctx.r)
+        # corr=corr.to(fmap1.device)
         return corr
 
     @staticmethod

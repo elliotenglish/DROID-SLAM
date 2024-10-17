@@ -32,51 +32,51 @@ std::vector<torch::Tensor> corr_index_cpu_forward(
   torch::PackedTensorAccessor32<scalar_t,5> corr=
     corr_.packed_accessor32<scalar_t,5>();
 
-  int n=0;
-  for(int x=0;x<w1;x++)
-    for(int y=0;y<h1;y++)
-    {
-      // if(x!=0 || y!=0)
-      //   continue;
+  for(int n=0;n<batch_size;n++)
+    for(int x=0;x<w1;x++)
+      for(int y=0;y<h1;y++)
+      {
+        // if(x!=0 || y!=0)
+        //   continue;
 
-      float x0=coords[n][0][y][x];
-      float y0=coords[n][1][y][x];
+        float x0=coords[n][0][y][x];
+        float y0=coords[n][1][y][x];
 
-      int x0f=int(floor(x0));
-      int y0f=int(floor(y0));
+        int x0f=int(floor(x0));
+        int y0f=int(floor(y0));
 
-      float dx=x0-x0f;
-      float dy=y0-y0f;
+        float dx=x0-x0f;
+        float dy=y0-y0f;
 
-      //print(dx,dy)
+        //print(dx,dy)
 
-      for(int i=0;i<(rd+1);i++)
-        for(int j=0;j<(rd+1);j++)
-        {
-          int x1=x0f - r + i;
-          int y1=y0f - r + j;
-
-          //cnt+=1
-
-          if(within_bounds(y1,x1,h2,w2))
+        for(int i=0;i<(rd+1);i++)
+          for(int j=0;j<(rd+1);j++)
           {
-            float s=volume[n][y][x][y1][x1];
-            // printf("(%d,%d,%d,%d,%d)=%g\n",n,y,x,y1,x1,s);
+            int x1=x0f - r + i;
+            int y1=y0f - r + j;
 
-            if(i > 0 && j > 0)
-              corr[n][i-1][j-1][y][x] += s * (dx * dy);
+            //cnt+=1
 
-            if(i > 0 and j < rd)
-              corr[n][i-1][j][y][x] += s * (dx * (1-dy));
+            if(within_bounds(y1,x1,h2,w2))
+            {
+              float s=volume[n][y][x][y1][x1];
+              // printf("(%d,%d,%d,%d,%d)=%g\n",n,y,x,y1,x1,s);
 
-            if(i < rd and j > 0)
-              corr[n][i][j-1][y][x] += s * ((1-dx) * dy);
+              if(i > 0 && j > 0)
+                corr[n][i-1][j-1][y][x] += s * (dx * dy);
 
-            if(i < rd and j < rd)
-              corr[n][i][j][y][x] += s * ((1-dx) * (1-dy));
+              if(i > 0 and j < rd)
+                corr[n][i-1][j][y][x] += s * (dx * (1-dy));
+
+              if(i < rd and j > 0)
+                corr[n][i][j-1][y][x] += s * ((1-dx) * dy);
+
+              if(i < rd and j < rd)
+                corr[n][i][j][y][x] += s * ((1-dx) * (1-dy));
+            }
           }
-        }
-    }
+      }
 
   // print("cnt",cnt);
 

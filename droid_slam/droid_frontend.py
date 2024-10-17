@@ -41,11 +41,13 @@ class DroidFrontend:
         if self.graph.corr is not None:
             self.graph.rm_factors(self.graph.age > self.max_age, store=True)
 
-        self.graph.add_proximity_factors(self.t1-5, max(self.t1-self.frontend_window, 0), 
+        self.graph.add_proximity_factors(self.t1-5, max(self.t1-self.frontend_window, 0),
             rad=self.frontend_radius, nms=self.frontend_nms, thresh=self.frontend_thresh, beta=self.beta, remove=True)
 
-        self.video.disps[self.t1-1] = torch.where(self.video.disps_sens[self.t1-1] > 0, 
+        self.video.disps[self.t1-1] = torch.where(self.video.disps_sens[self.t1-1] > 0,
            self.video.disps_sens[self.t1-1], self.video.disps[self.t1-1])
+
+        # print(f"poses={self.video.poses.sum()}")
 
         for itr in range(self.iters1):
             self.graph.update(None, None, use_inactive=True)
@@ -53,10 +55,11 @@ class DroidFrontend:
         # set initial pose for next frame
         poses = SE3(self.video.poses)
         d = self.video.distance([self.t1-3], [self.t1-2], beta=self.beta, bidirectional=True)
+        # print(f"d={d}")
 
         if d.item() < self.keyframe_thresh:
             self.graph.rm_keyframe(self.t1 - 2)
-            
+
             with self.video.get_lock():
                 self.video.counter.value -= 1
                 self.t1 -= 1
@@ -80,8 +83,12 @@ class DroidFrontend:
 
         self.graph.add_neighborhood_factors(self.t0, self.t1, r=3)
 
+        # print("init poses",self.video.poses[:self.video.counter.value].sum())
+
         for itr in range(8):
             self.graph.update(1, use_inactive=True)
+
+        # print("init poses after update",self.video.poses[:self.video.counter.value].sum())
 
         self.graph.add_proximity_factors(0, 0, rad=2, nms=2, thresh=self.frontend_thresh, remove=False)
 
@@ -111,9 +118,9 @@ class DroidFrontend:
         # do initialization
         if not self.is_initialized and self.video.counter.value == self.warmup:
             self.__initialize()
-            
+
         # do update
         elif self.is_initialized and self.t1 < self.video.counter.value:
             self.__update()
 
-        
+

@@ -10,6 +10,8 @@ def get_target_shape(image):
   h0, w0, _ = image.shape
   h1 = int(h0 * np.sqrt((target_height * target_width) / (h0 * w0)))
   w1 = int(w0 * np.sqrt((target_height * target_width) / (h0 * w0)))
+  h1 = h1-h1%8
+  w1 = w1-w1%8
   return h0,w0,h1,w1
 
 def image_to_tensor(image):

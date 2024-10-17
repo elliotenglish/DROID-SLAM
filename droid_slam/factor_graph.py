@@ -239,6 +239,8 @@ class FactorGraph:
             target = target.view(-1, ht, wd, 2).permute(0,3,1,2).contiguous()
             weight = weight.view(-1, ht, wd, 2).permute(0,3,1,2).contiguous()
 
+            # print("running ba on graph")
+
             # dense bundle adjustment
             self.video.ba(target, weight, damping, ii, jj, t0, t1, 
                 itrs=itrs, lm=1e-4, ep=0.1, motion_only=motion_only)
