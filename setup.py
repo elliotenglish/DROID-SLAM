@@ -4,6 +4,9 @@ from cyborg.utilities.portable_extension import PortableExtension,BuildExtension
 import os.path as osp
 ROOT = osp.dirname(osp.abspath(__file__))
 
+#compile_flags=["-g","-O0"]
+compile_flags=["-O3"]
+
 setup(
     name='droid_slam',
     packages=["droid_slam"],
@@ -22,8 +25,8 @@ setup(
                 "src/debug_utilities.cc",
             ],
             extra_compile_args={
-                'cxx': ['-g',"-O0"],
-                'nvcc': ['-g',"-O0",
+                'cxx': compile_flags,
+                'nvcc': compile_flags + [
                     #'-gencode=arch=compute_60,code=sm_60',
                     #'-gencode=arch=compute_61,code=sm_61',
                     #'-gencode=arch=compute_70,code=sm_70',
