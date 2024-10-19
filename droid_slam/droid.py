@@ -35,7 +35,7 @@ class Droid:
 
         # visualizer
         if not self.disable_vis:
-            from visualization import droid_visualization
+            from .visualization import droid_visualization
             self.visualizer = Process(target=droid_visualization, args=(self.video,))
             self.visualizer.start()
 

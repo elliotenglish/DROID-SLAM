@@ -6,9 +6,9 @@ import time
 import argparse
 import numpy as np
 import open3d as o3d
-
+import os
 from lietorch import SE3
-import geom.projective_ops as pops
+from .geom import projective_ops as pops
 
 CAM_POINTS = np.array([
         [ 0,   0,   0],
@@ -149,7 +149,8 @@ def droid_visualization(video):
     vis.register_key_callback(ord("A"), decrease_filter)
 
     vis.create_window(height=540, width=960)
-    vis.get_render_option().load_from_json("misc/renderoption.json")
+    vis.get_render_option().load_from_json(os.path.join(os.path.dirname(__file__),"../misc/renderoption.json"))
 
     vis.run()
+
     vis.destroy_window()
