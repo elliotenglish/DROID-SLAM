@@ -6,18 +6,11 @@ import numpy as np
 from types import SimpleNamespace
 import droid_slam.droid
 import droid_slam.utilities
+import cyborg.utilities.input_stream
 
-def get_test_data(path=os.path.join(os.path.dirname(__file__),"../data/mav0/cam0/data.csv"),max_frames=None):
-  with open(path,"r") as f:
-    reader=csv.reader(f)
-    frame_idx=-1
-    for row in reader:
-      frame_idx+=1
-      if max_frames is not None and frame_idx>max_frames:
-        break
-      if frame_idx==0:
-        continue
-      yield frame_idx,float(row[0])*1e-9,cv2.imread(os.path.join(os.path.dirname(path),"data",row[1]))
+def get_test_data(max_frames):
+  return cyborg.utilities.input_stream.get_input_stream(
+    os.path.join(os.path.dirname(__file__),"../data/mav0/cam0/data.csv"),max_frames)
 
 def compute_results(device):
   system=None
@@ -71,6 +64,7 @@ if __name__=="__main__":
   import argparse
   parser=argparse.ArgumentParser()
   parser.add_argument("--device",default="cuda")
+  parser.add_argument("--max_frames",type=int,default=100)
   args=parser.parse_args()
-  test_droid_slam(device=args.device)
+  test_droid_slam(device=args.device,max_frames=args.max_frames)
   #pytest.main(["-x",__file__,"-s"])
