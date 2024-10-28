@@ -1,6 +1,7 @@
 #include <torch/extension.h>
 #include <vector>
 
+#include "droid_kernels.h"
 #include "droid_kernels_cpu.h"
 #include "droid_kernels_cuda.h"
 #include "correlation_kernels_cpu.h"
@@ -420,20 +421,20 @@ torch::Tensor accum2(
 
   torch::Tensor ix_cpu = ix.to(torch::kCPU);
   torch::Tensor jx_cpu = jx.to(torch::kCPU);
-  torch::Tensor inds = torch::argsort(ix_cpu).to(torch::kInt32);
+  torch::Tensor inds = torch::argsort(ix_cpu).to(IndexTypeTorch);
   CHECK_INPUT(inds);
 
-  int* ix_data = ix_cpu.data_ptr<int>();
-  int* jx_data = jx_cpu.data_ptr<int>();
-  int* kx_data = inds.data_ptr<int>();
+  IndexType* ix_data = ix_cpu.data_ptr<IndexType>();
+  IndexType* jx_data = jx_cpu.data_ptr<IndexType>();
+  IndexType* kx_data = inds.data_ptr<IndexType>();
 
   int count = jx.size(0);
-  std::vector<int> cols;
+  std::vector<IndexType> cols;
 
   torch::Tensor ptrs_cpu = torch::zeros({count+1}, 
-    torch::TensorOptions().dtype(torch::kInt32));
+    torch::TensorOptions().dtype(IndexTypeTorch));
   
-  int* ptrs_data = ptrs_cpu.data_ptr<int>();
+  IndexType* ptrs_data = ptrs_cpu.data_ptr<IndexType>();
   ptrs_data[0] = 0;
 
   int i = 0;
@@ -447,9 +448,9 @@ torch::Tensor accum2(
   }
 
   torch::Tensor idxs_cpu = torch::zeros({int(cols.size())}, 
-    torch::TensorOptions().dtype(torch::kInt32));
+    torch::TensorOptions().dtype(IndexTypeTorch));
 
-  int* idxs_data = idxs_cpu.data_ptr<int>();
+  IndexType* idxs_data = idxs_cpu.data_ptr<IndexType>();
 
   for (unsigned int i=0; i<cols.size(); i++) {
     idxs_data[i] = cols[i];
@@ -489,17 +490,17 @@ class SparseBlock {
       CHECK_INPUT(jj);
 
       auto As_cpu = As.to(torch::kCPU).to(torch::kFloat64);
-      auto ii_cpu = ii.to(torch::kCPU).to(torch::kInt32);
-      auto jj_cpu = jj.to(torch::kCPU).to(torch::kInt32);
+      auto ii_cpu = ii.to(torch::kCPU).to(IndexTypeTorch);
+      auto jj_cpu = jj.to(torch::kCPU).to(IndexTypeTorch);
 
       auto As_acc = As_cpu.accessor<double,3>();
-      auto ii_acc = ii_cpu.accessor<int,1>();
-      auto jj_acc = jj_cpu.accessor<int,1>();
+      auto ii_acc = ii_cpu.accessor<IndexType,1>();
+      auto jj_acc = jj_cpu.accessor<IndexType,1>();
 
       std::vector<T> tripletList;
       for (int n=0; n<ii.size(0); n++) {
-        const int i = ii_acc[n];
-        const int j = jj_acc[n];
+        const IndexType i = ii_acc[n];
+        const IndexType j = jj_acc[n];
 
         if (i >= 0 && j >= 0) {
           for (int k=0; k<M; k++) {
@@ -519,13 +520,13 @@ class SparseBlock {
       CHECK_INPUT(ii);
 
       auto bs_cpu = bs.to(torch::kCPU).to(torch::kFloat64);
-      auto ii_cpu = ii.to(torch::kCPU).to(torch::kInt32);
+      auto ii_cpu = ii.to(torch::kCPU).to(IndexTypeTorch);
 
       auto bs_acc = bs_cpu.accessor<double,2>();
-      auto ii_acc = ii_cpu.accessor<int,1>();
+      auto ii_acc = ii_cpu.accessor<IndexType,1>();
 
       for (int n=0; n<ii.size(0); n++) {
-        const int i = ii_acc[n];
+        const IndexType i = ii_acc[n];
         if (i >= 0) {
           for (int j=0; j<M; j++) {
             b(i*M + j) += bs_acc[n][j];
@@ -601,19 +602,19 @@ SparseBlock schur_block(torch::Tensor E,
   torch::Tensor kk_cpu = kk.to(torch::kCPU);
 
   const int P = t1 - t0;
-  //const int* ii_data = ii_cpu.data_ptr<int>();
-  const int* jj_data = jj_cpu.data_ptr<int>();
-  const int* kk_data = kk_cpu.data_ptr<int>();
+  //const IndexType* ii_data = ii_cpu.data_ptr<IndexType>();
+  const IndexType* jj_data = jj_cpu.data_ptr<IndexType>();
+  const IndexType* kk_data = kk_cpu.data_ptr<IndexType>();
 
   std::vector<std::vector<int>> graph(P);
   std::vector<std::vector<int>> index(P);
 
   for (int n=0; n<ii_cpu.size(0); n++) {
-    const int j = jj_data[n];
-    const int k = kk_data[n];
+    const IndexType j = jj_data[n];
+    const IndexType k = kk_data[n];
 
     if (j >= t0 && j <= t1) {
-      const int t = j - t0;
+      const IndexType t = j - t0;
       graph[t].push_back(k);
       index[t].push_back(n);
     }
@@ -640,16 +641,16 @@ SparseBlock schur_block(torch::Tensor E,
   }
 
   torch::Tensor ix_dev = torch::from_blob(idx.data(), {int(idx.size())}, 
-    torch::TensorOptions().dtype(torch::kInt32)).to(E.device().type()).view({-1, 3});
+    torch::TensorOptions().dtype(IndexTypeTorch)).to(E.device().type()).view({-1, 3});
 
   torch::Tensor jx_dev = torch::stack({kk_cpu}, -1)
-    .to(E.device()).to(torch::kInt32);
+    .to(E.device()).to(IndexTypeTorch);
 
   torch::Tensor ii2_cpu = torch::from_blob(ii_list.data(), {int(ii_list.size())}, 
-    torch::TensorOptions().dtype(torch::kInt32)).view({-1});
+    torch::TensorOptions().dtype(IndexTypeTorch)).view({-1});
 
   torch::Tensor jj2_cpu = torch::from_blob(jj_list.data(), {int(jj_list.size())}, 
-    torch::TensorOptions().dtype(torch::kInt32)).view({-1});
+    torch::TensorOptions().dtype(IndexTypeTorch)).view({-1});
 
   torch::Tensor S = torch::zeros({ix_dev.size(0), 6, 6}, 
     torch::TensorOptions().dtype(torch::kFloat32).device(E.device().type()));
@@ -707,7 +708,7 @@ std::vector<torch::Tensor> ba(
   const int ht = disps.size(1);
   const int wd = disps.size(2);
 
-  torch::Tensor ts = torch::arange(t0, t1, torch::kInt32).to(poses.device().type());
+  torch::Tensor ts = torch::arange(t0, t1, IndexTypeTorch).to(poses.device().type());
   torch::Tensor ii_exp = torch::cat({ts, ii}, 0);
   torch::Tensor jj_exp = torch::cat({ts, jj}, 0);
 
@@ -718,8 +719,8 @@ std::vector<torch::Tensor> ba(
   std::tuple<torch::Tensor, torch::Tensor> kuniq = 
     torch::_unique(ii_exp, true, true);
 
-  torch::Tensor kx = std::get<0>(kuniq).to(torch::kInt32);
-  torch::Tensor kk_exp = std::get<1>(kuniq).to(torch::kInt32);
+  torch::Tensor kx = std::get<0>(kuniq).to(IndexTypeTorch);
+  torch::Tensor kk_exp = std::get<1>(kuniq).to(IndexTypeTorch);
 
   CHECK_INPUT(kx);
   CHECK_INPUT(kk_exp);

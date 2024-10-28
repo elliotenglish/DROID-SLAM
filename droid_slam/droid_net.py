@@ -14,6 +14,7 @@ from .geom.ba import BA
 
 from .geom import projective_ops as pops
 from .geom.graph_utils import graph_to_edge_list, keyframe_indicies
+from .droid_kernels import IndexTypeTorch
 
 from torch_scatter import scatter_mean
 
@@ -176,8 +177,8 @@ class DroidNet(nn.Module):
         u = keyframe_indicies(graph)
         ii, jj, kk = graph_to_edge_list(graph)
 
-        ii = ii.to(device=images.device, dtype=torch.int)
-        jj = jj.to(device=images.device, dtype=torch.int)
+        ii = ii.to(device=images.device, dtype=IndexTypeTorch)
+        jj = jj.to(device=images.device, dtype=IndexTypeTorch)
 
         fmaps, net, inp = self.extract_features(images)
         net, inp = net[:,ii], inp[:,ii]

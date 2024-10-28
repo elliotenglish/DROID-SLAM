@@ -15,7 +15,7 @@ void load_intrinsics(
 
 void load_pose(
   const torch::PackedTensorAccessor32<float,2>& poses,
-  const int ix,
+  const IndexType ix,
   float ti[],
   float qi[])
 {
@@ -25,7 +25,7 @@ void load_pose(
 
 void store_pose(
   const torch::PackedTensorAccessor32<float,2>& poses,
-  const int ix,
+  const IndexType ix,
   float ti[],
   float qi[])
 {
@@ -35,8 +35,8 @@ void store_pose(
 
 void load_relative_pose(
   const torch::PackedTensorAccessor32<float,2>& poses,
-  const int ix,
-  const int jx,
+  const IndexType ix,
+  const IndexType jx,
   float ti[],float tj[],float tij[],
   float qi[],float qj[],float qij[],
   const float stereo_offset=0)
@@ -70,8 +70,8 @@ void projective_transform_kernel(
     const torch::PackedTensorAccessor32<float,2> poses,
     const torch::PackedTensorAccessor32<float,3> disps,
     const torch::PackedTensorAccessor32<float,1> intrinsics,
-    const torch::PackedTensorAccessor32<int,1> ii,
-    const torch::PackedTensorAccessor32<int,1> jj,
+    const torch::PackedTensorAccessor32<IndexType,1> ii,
+    const torch::PackedTensorAccessor32<IndexType,1> jj,
     torch::PackedTensorAccessor32<float,4> Hs,
     torch::PackedTensorAccessor32<float,3> vs,
     torch::PackedTensorAccessor32<float,3> Eii,
@@ -86,8 +86,8 @@ void projective_transform_kernel(
   int num_blocks=ii.size(0);
   for(int block_id=0;block_id<num_blocks;block_id++)
   {
-    int ix = static_cast<int>(ii[block_id]);
-    int jx = static_cast<int>(jj[block_id]);
+    IndexType ix = static_cast<IndexType>(ii[block_id]);
+    IndexType jx = static_cast<IndexType>(jj[block_id]);
 
     float fx,fy,cx,cy;
     load_intrinsics(intrinsics,fx,fy,cx,cy);
@@ -289,8 +289,8 @@ void projective_transform_cpu(
     poses.packed_accessor32<float,2>(),
     disps.packed_accessor32<float,3>(),
     intrinsics.packed_accessor32<float,1>(),
-    ii.packed_accessor32<int,1>(),
-    jj.packed_accessor32<int,1>(),
+    ii.packed_accessor32<IndexType,1>(),
+    jj.packed_accessor32<IndexType,1>(),
     Hs.packed_accessor32<float,4>(),
     vs.packed_accessor32<float,3>(),
     Eii.packed_accessor32<float,3>(),
@@ -305,8 +305,8 @@ void projmap_kernel(
   const torch::PackedTensorAccessor32<float,2> poses,
   const torch::PackedTensorAccessor32<float,3> disps,
   const torch::PackedTensorAccessor32<float,1> intrinsics,
-  const torch::PackedTensorAccessor32<int,1> ii,
-  const torch::PackedTensorAccessor32<int,1> jj,
+  const torch::PackedTensorAccessor32<IndexType,1> ii,
+  const torch::PackedTensorAccessor32<IndexType,1> jj,
   torch::PackedTensorAccessor32<float,4> coords,
   torch::PackedTensorAccessor32<float,4> valid)
 {
@@ -316,8 +316,8 @@ void projmap_kernel(
 
   for(int block_id=0;block_id<num;block_id++)
   {
-    int ix = static_cast<int>(ii[block_id]);
-    int jx = static_cast<int>(jj[block_id]);
+    IndexType ix = static_cast<IndexType>(ii[block_id]);
+    IndexType jx = static_cast<IndexType>(jj[block_id]);
 
     float fx,fy,cx,cy;
     load_intrinsics(intrinsics,fx,fy,cx,cy);
@@ -376,8 +376,8 @@ std::vector<torch::Tensor> projmap_cpu(
     poses.packed_accessor32<float,2>(),
     disps.packed_accessor32<float,3>(),
     intrinsics.packed_accessor32<float,1>(),
-    ii.packed_accessor32<int,1>(),
-    jj.packed_accessor32<int,1>(),
+    ii.packed_accessor32<IndexType,1>(),
+    jj.packed_accessor32<IndexType,1>(),
     coords.packed_accessor32<float,4>(),
     valid.packed_accessor32<float,4>());
 
@@ -390,8 +390,8 @@ void frame_distance_kernel(
   const torch::PackedTensorAccessor32<float,2> poses,
   const torch::PackedTensorAccessor32<float,3> disps,
   const torch::PackedTensorAccessor32<float,1> intrinsics,
-  const torch::PackedTensorAccessor32<int,1> ii,
-  const torch::PackedTensorAccessor32<int,1> jj,
+  const torch::PackedTensorAccessor32<IndexType,1> ii,
+  const torch::PackedTensorAccessor32<IndexType,1> jj,
   torch::PackedTensorAccessor32<float,1> dist,
   const float beta)
 {
@@ -401,8 +401,8 @@ void frame_distance_kernel(
 
   for(int block_id=0;block_id<num;block_id++)
   {
-    int ix = static_cast<int>(ii[block_id]);
-    int jx = static_cast<int>(jj[block_id]);
+    IndexType ix = static_cast<IndexType>(ii[block_id]);
+    IndexType jx = static_cast<IndexType>(jj[block_id]);
 
     float fx,fy,cx,cy;
     load_intrinsics(intrinsics,fx,fy,cx,cy);
@@ -486,8 +486,8 @@ torch::Tensor frame_distance_cpu(
     poses.packed_accessor32<float,2>(),
     disps.packed_accessor32<float,3>(),
     intrinsics.packed_accessor32<float,1>(),
-    ii.packed_accessor32<int,1>(),
-    jj.packed_accessor32<int,1>(),
+    ii.packed_accessor32<IndexType,1>(),
+    jj.packed_accessor32<IndexType,1>(),
     dist.packed_accessor32<float,1>(), beta);
 
   return dist;
@@ -499,7 +499,7 @@ void depth_filter_kernel(
   const torch::PackedTensorAccessor32<float,2> poses,
   const torch::PackedTensorAccessor32<float,3> disps,
   const torch::PackedTensorAccessor32<float,1> intrinsics,
-  const torch::PackedTensorAccessor32<int,1> inds,
+  const torch::PackedTensorAccessor32<IndexType,1> inds,
   const torch::PackedTensorAccessor32<float,1> thresh,
   torch::PackedTensorAccessor32<float,3> counter)
 {
@@ -510,8 +510,8 @@ void depth_filter_kernel(
   for(int block_id=0;block_id<num;block_id++)
     for(int neigh_id=0;neigh_id<6;neigh_id++)
     {
-      int ix = static_cast<int>(inds[block_id]);
-      int jx = (neigh_id < 3) ? ix - neigh_id - 1 : ix + neigh_id;
+      IndexType ix = static_cast<IndexType>(inds[block_id]);
+      IndexType jx = (neigh_id < 3) ? ix - neigh_id - 1 : ix + neigh_id;
 
       if (jx < 0 || jx >= num) {
         continue;
@@ -590,7 +590,7 @@ torch::Tensor depth_filter_cpu(
     poses.packed_accessor32<float,2>(),
     disps.packed_accessor32<float,3>(),
     intrinsics.packed_accessor32<float,1>(),
-    ix.packed_accessor32<int,1>(),
+    ix.packed_accessor32<IndexType,1>(),
     thresh.packed_accessor32<float,1>(),
     counter.packed_accessor32<float,3>());
 
@@ -669,20 +669,20 @@ torch::Tensor iproj_cpu(
 
 void accum_kernel(
   const torch::PackedTensorAccessor32<float,2> inps,
-  const torch::PackedTensorAccessor32<int,1> ptrs,
-  const torch::PackedTensorAccessor32<int,1> idxs,
+  const torch::PackedTensorAccessor32<IndexType,1> ptrs,
+  const torch::PackedTensorAccessor32<IndexType,1> idxs,
   torch::PackedTensorAccessor32<float,2> outs)
 {
   int count=ptrs.size(0)-1;
   int D = inps.size(2);
   for(int block_id=0;block_id<count;block_id++)
   {
-    const int start = ptrs[block_id];
-    const int end = ptrs[block_id+1];
+    const IndexType start = ptrs[block_id];
+    const IndexType end = ptrs[block_id+1];
     for(int k=0; k<D; k++)
     {
       float x = 0;
-      for (int i=start; i<end; i++) {
+      for (IndexType i=start; i<end; i++) {
         x += inps[idxs[i]][k];
       }
       outs[block_id][k] = x;
@@ -699,8 +699,8 @@ torch::Tensor accum_cpu(
   torch::Tensor out = torch::zeros({count,inps.size(1)},inps.options());
   accum_kernel(
     inps.packed_accessor32<float,2>(),
-    ptrs.packed_accessor32<int,1>(),
-    idxs.packed_accessor32<int,1>(),
+    ptrs.packed_accessor32<IndexType,1>(),
+    idxs.packed_accessor32<IndexType,1>(),
     out.packed_accessor32<float,2>());
   return out;
 }
@@ -738,11 +738,11 @@ void pose_retr_cpu(
 void disp_retr_kernel(
   torch::PackedTensorAccessor32<float,3> disps,
   const torch::PackedTensorAccessor32<float,2> dz,
-  const torch::PackedTensorAccessor32<int,1> inds)
+  const torch::PackedTensorAccessor32<IndexType,1> inds)
 {
   for(int block_id=0;block_id<inds.size(0);block_id++)
   {
-    const int i = inds[block_id];
+    const IndexType i = inds[block_id];
     const int ht = disps.size(1);
     const int wd = disps.size(2);
 
@@ -765,21 +765,21 @@ void disp_retr_cpu(
   disp_retr_kernel(
     disps.packed_accessor32<float,3>(),
     dz.packed_accessor32<float,2>(),
-    inds.packed_accessor32<int,1>());
+    inds.packed_accessor32<IndexType,1>());
 }
 
 void EEt6x6_kernel(
     const torch::PackedTensorAccessor32<float,3> E,
     const torch::PackedTensorAccessor32<float,2> Q,
-    const torch::PackedTensorAccessor32<int,2> idx,
+    const torch::PackedTensorAccessor32<IndexType,2> idx,
     torch::PackedTensorAccessor32<float,3> S)
 {
   for(int block_id=0;block_id<idx.size(0);block_id++)
   {
     // indices
-    const int ix = idx[block_id][0];
-    const int jx = idx[block_id][1];
-    const int kx = idx[block_id][2];
+    const IndexType ix = idx[block_id][0];
+    const IndexType jx = idx[block_id][1];
+    const IndexType kx = idx[block_id][2];
 
     const int D = E.size(2);
 
@@ -824,7 +824,7 @@ void EEt6x6_cpu(
   EEt6x6_kernel(
     E.packed_accessor32<float,3>(),
     Q.packed_accessor32<float,2>(),
-    idx.packed_accessor32<int,2>(),
+    idx.packed_accessor32<IndexType,2>(),
     S.packed_accessor32<float,3>());
 }
 
@@ -832,7 +832,7 @@ void Ev6x1_kernel(
     const torch::PackedTensorAccessor32<float,3> E,
     const torch::PackedTensorAccessor32<float,2> Q,
     const torch::PackedTensorAccessor32<float,2> w,
-    const torch::PackedTensorAccessor32<int,2> idx,
+    const torch::PackedTensorAccessor32<IndexType,2> idx,
     torch::PackedTensorAccessor32<float,2> v)
 {
   for(int block_id=0;block_id<idx.size(0);block_id++)
@@ -868,20 +868,20 @@ void Ev6x1_cpu(
     E.packed_accessor32<float,3>(),
     Q.packed_accessor32<float,2>(),
     w.packed_accessor32<float,2>(),
-    idx.packed_accessor32<int,2>(),
+    idx.packed_accessor32<IndexType,2>(),
     v.packed_accessor32<float,2>());
 }
 
 void EvT6x1_kernel(
   const torch::PackedTensorAccessor32<float,3> E,
   const torch::PackedTensorAccessor32<float,2> x,
-  const torch::PackedTensorAccessor32<int,1> idx,
+  const torch::PackedTensorAccessor32<IndexType,1> idx,
   torch::PackedTensorAccessor32<float,2> w)
 {
   for(int block_id=0;block_id<idx.size(0);block_id++)
   {
     const int D = E.size(2);
-    const int ix = idx[block_id];
+    const IndexType ix = idx[block_id];
 
     if (idx[block_id] <= 0 || idx[block_id] >= x.size(0))
       continue;
@@ -906,6 +906,6 @@ void EvT6x1_cpu(
   EvT6x1_kernel(
     E.packed_accessor32<float,3>(),
     x.packed_accessor32<float,2>(),
-    idx.packed_accessor32<int,1>(),
+    idx.packed_accessor32<IndexType,1>(),
     w.packed_accessor32<float,2>());
 }

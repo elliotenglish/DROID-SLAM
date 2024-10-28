@@ -8,6 +8,7 @@ from collections import OrderedDict
 
 from .droid_net import cvx_upsample
 from .geom import projective_ops as pops
+from .droid_kernels import IndexTypeTorch
 
 class DepthVideo:
     def __init__(self, device, image_size=[480, 640], buffer=1024, stereo=False):
@@ -117,8 +118,8 @@ class DepthVideo:
         if not isinstance(jj, torch.Tensor):
             jj = torch.as_tensor(jj)
 
-        ii = ii.to(device=self.device, dtype=torch.int).reshape(-1)
-        jj = jj.to(device=self.device, dtype=torch.int).reshape(-1)
+        ii = ii.to(device=self.device, dtype=IndexTypeTorch).reshape(-1)
+        jj = jj.to(device=self.device, dtype=IndexTypeTorch).reshape(-1)
 
         return ii, jj
 
