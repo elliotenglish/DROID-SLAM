@@ -4,9 +4,13 @@ from cyborg.utilities.portable_extension import PortableExtension,BuildExtension
 import os.path as osp
 ROOT = osp.dirname(osp.abspath(__file__))
 
-compile_flags=["-glldb","-O0","-UNDEBUG"]
-#compile_flags=["-O3"]
-link_flags=["-glldb","-O0"]#"-Wl,--no-as-needed",
+optimize=False
+if optimize:
+    compile_flags=["-O3"]
+    link_flags=["-O3"]
+else:
+    compile_flags=["-g","-O0","-UNDEBUG"]
+    link_flags=["-g","-O0"]#"-Wl,--no-as-needed",
 
 setup(
     name='droid_slam',
