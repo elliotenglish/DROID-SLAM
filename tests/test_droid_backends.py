@@ -156,8 +156,8 @@ def test_projective_transform():
     poses=torch.tensor(generate_poses(gen,num).astype(np.float32)).to(device=device)
     disps=torch.tensor(gen.uniform(.1,.2,size=[num,h,w]).astype(np.float32)).to(device=device)
     intrinsics=torch.tensor(np.array(droid_slam.utilities.get_default_intrinsics(w,h)).astype(np.float32)).to(device=device)
-    ii=torch.tensor(np.array([0,2]).astype(np.long)).to(device=device)
-    jj=torch.tensor(np.array([1,2]).astype(np.long)).to(device=device)
+    ii=torch.tensor(np.array([0,2]).astype(np.int)).to(device=device)
+    jj=torch.tensor(np.array([1,2]).astype(np.int)).to(device=device)
 
     Hs=torch.tensor(np.zeros([4,ni,6,6]).astype(np.float32)).to(device=device)
     vs=torch.tensor(np.zeros([2,ni,6]).astype(np.float32)).to(device=device)
@@ -184,8 +184,8 @@ def test_projmap():
     poses=torch.tensor(generate_poses(gen,num).astype(np.float32)).to(device=device)
     disps=torch.tensor(gen.uniform(.1,.2,size=[num,h,w]).astype(np.float32)).to(device=device)
     intrinsics=torch.tensor(np.array(droid_slam.utilities.get_default_intrinsics(w,h)).astype(np.float32)).to(device=device)
-    ii=torch.tensor(np.array([0,2]).astype(np.long)).to(device=device)
-    jj=torch.tensor(np.array([1,2]).astype(np.long)).to(device=device)
+    ii=torch.tensor(np.array([0,2]).astype(np.int)).to(device=device)
+    jj=torch.tensor(np.array([1,2]).astype(np.int)).to(device=device)
 
     results=droid_backends.projmap(poses,disps,intrinsics,ii,jj)
     #print(results)
@@ -203,8 +203,8 @@ def test_frame_distance():
     poses=torch.tensor(generate_poses(gen,num).astype(np.float32)).to(device=device)
     disps=torch.tensor(gen.uniform(.1,.2,size=[num,h,w]).astype(np.float32)).to(device=device)
     intrinsics=torch.tensor(np.array(droid_slam.utilities.get_default_intrinsics(w,h)).astype(np.float32)).to(device=device)
-    ii=torch.tensor(np.array([0,2]).astype(np.long)).to(device=device)
-    jj=torch.tensor(np.array([1,2]).astype(np.long)).to(device=device)
+    ii=torch.tensor(np.array([0,2]).astype(np.int)).to(device=device)
+    jj=torch.tensor(np.array([1,2]).astype(np.int)).to(device=device)
     beta=.001
 
     dist=droid_backends.frame_distance(poses,disps,intrinsics,ii,jj,beta)
@@ -222,7 +222,7 @@ def test_depth_filter():
     poses=torch.tensor(generate_poses(gen,num).astype(np.float32)).to(device=device)
     disps=torch.tensor(gen.uniform(.1,.2,size=[num,h,w]).astype(np.float32)).to(device=device)
     intrinsics=torch.tensor(np.array(droid_slam.utilities.get_default_intrinsics(w,h)).astype(np.float32)).to(device=device)
-    inds=torch.tensor(np.array([0,2]).astype(np.long)).to(device=device)
+    inds=torch.tensor(np.array([0,2]).astype(np.int)).to(device=device)
     thresh=torch.tensor(np.array([.1]*ni).astype(np.float32)).to(device=device)
 
     counter=droid_backends.depth_filter(poses,disps,intrinsics,inds,thresh)
@@ -251,8 +251,8 @@ def test_accum():
     m=9
     gen=np.random.default_rng(5432)
     inps=torch.tensor(gen.uniform(-1,1,size=[n,m]).astype(np.float32)).to(device=device)
-    idxs=torch.tensor(np.array([0,4,3,5,6,7,8,1,10,16,19]).astype(np.long)).to(device=device)
-    ptrs=torch.tensor(np.array([0,3,7,10]).astype(np.long)).to(device=device)
+    idxs=torch.tensor(np.array([0,4,3,5,6,7,8,1,10,16,19]).astype(np.int)).to(device=device)
+    ptrs=torch.tensor(np.array([0,3,7,10]).astype(np.int)).to(device=device)
 
     out=droid_backends.accum(inps,ptrs,idxs)
     return out
@@ -283,7 +283,7 @@ def test_disp_retr():
     gen=np.random.default_rng(5432)
     disps0=torch.tensor(gen.uniform(-1,1,size=[num,h,w]).astype(np.float32)).to(device=device)
     dz=torch.tensor(gen.uniform(-1,1,size=[ni,w*h]).astype(np.float32)).to(device=device)
-    idxs=torch.tensor(np.array([3,1]).astype(np.long)).to(device=device)
+    idxs=torch.tensor(np.array([3,1]).astype(np.int)).to(device=device)
     
     disps=disps0.clone().detach()
     droid_backends.disp_retr(disps,dz,idxs)
@@ -302,7 +302,7 @@ def test_EEt6x6():
     gen=np.random.default_rng(5432)
     E=torch.tensor(gen.uniform(-1,1,size=[num,6,D]).astype(np.float32)).to(device)
     Q=torch.tensor(gen.uniform(-1,1,size=[nk,D]).astype(np.float32)).to(device)
-    idx=torch.tensor(np.array([[0,0,1],[1,2,3]]).astype(np.long)).to(device)
+    idx=torch.tensor(np.array([[0,0,1],[1,2,3]]).astype(np.int)).to(device)
     S=torch.tensor(np.zeros([num,6,6]).astype(np.float32)).to(device=device)
 
     droid_backends.EEt6x6(E,Q,idx,S)
@@ -320,7 +320,7 @@ def test_Ev6x1():
     E=torch.tensor(gen.uniform(-1,1,size=[num,6,D]).astype(np.float32)).to(device)
     Q=torch.tensor(gen.uniform(-1,1,size=[nk,D]).astype(np.float32)).to(device)
     w=torch.tensor(gen.uniform(-1,1,size=[nk,D]).astype(np.float32)).to(device)
-    idx=torch.tensor(np.array([[0,1],[1,2]]).astype(np.long)).to(device)
+    idx=torch.tensor(np.array([[0,1],[1,2]]).astype(np.int)).to(device)
     v=torch.tensor(np.zeros([num,6]).astype(np.float32)).to(device=device)
 
     droid_backends.Ev6x1(E,Q,w,idx,v)
@@ -337,7 +337,7 @@ def test_EvT6x1():
     D=3
     E=torch.tensor(gen.uniform(-1,1,size=[num,6,D]).astype(np.float32)).to(device)
     x=torch.tensor(gen.uniform(-1,1,size=[ni,6]).astype(np.float32)).to(device)
-    idx=torch.tensor(np.array([2,1,3,0,1]).astype(np.long)).to(device)
+    idx=torch.tensor(np.array([2,1,3,0,1]).astype(np.int)).to(device)
     w=torch.tensor(np.zeros([num,D]).astype(np.float32)).to(device=device)
 
     droid_backends.EvT6x1(E,x,idx,w)

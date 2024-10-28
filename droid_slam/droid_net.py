@@ -176,8 +176,8 @@ class DroidNet(nn.Module):
         u = keyframe_indicies(graph)
         ii, jj, kk = graph_to_edge_list(graph)
 
-        ii = ii.to(device=images.device, dtype=torch.long)
-        jj = jj.to(device=images.device, dtype=torch.long)
+        ii = ii.to(device=images.device, dtype=torch.int)
+        jj = jj.to(device=images.device, dtype=torch.int)
 
         fmaps, net, inp = self.extract_features(images)
         net, inp = net[:,ii], inp[:,ii]

@@ -70,8 +70,8 @@ void projective_transform_kernel(
     const torch::PackedTensorAccessor32<float,2> poses,
     const torch::PackedTensorAccessor32<float,3> disps,
     const torch::PackedTensorAccessor32<float,1> intrinsics,
-    const torch::PackedTensorAccessor32<long,1> ii,
-    const torch::PackedTensorAccessor32<long,1> jj,
+    const torch::PackedTensorAccessor32<int,1> ii,
+    const torch::PackedTensorAccessor32<int,1> jj,
     torch::PackedTensorAccessor32<float,4> Hs,
     torch::PackedTensorAccessor32<float,3> vs,
     torch::PackedTensorAccessor32<float,3> Eii,
@@ -289,8 +289,8 @@ void projective_transform_cpu(
     poses.packed_accessor32<float,2>(),
     disps.packed_accessor32<float,3>(),
     intrinsics.packed_accessor32<float,1>(),
-    ii.packed_accessor32<long,1>(),
-    jj.packed_accessor32<long,1>(),
+    ii.packed_accessor32<int,1>(),
+    jj.packed_accessor32<int,1>(),
     Hs.packed_accessor32<float,4>(),
     vs.packed_accessor32<float,3>(),
     Eii.packed_accessor32<float,3>(),
@@ -305,8 +305,8 @@ void projmap_kernel(
   const torch::PackedTensorAccessor32<float,2> poses,
   const torch::PackedTensorAccessor32<float,3> disps,
   const torch::PackedTensorAccessor32<float,1> intrinsics,
-  const torch::PackedTensorAccessor32<long,1> ii,
-  const torch::PackedTensorAccessor32<long,1> jj,
+  const torch::PackedTensorAccessor32<int,1> ii,
+  const torch::PackedTensorAccessor32<int,1> jj,
   torch::PackedTensorAccessor32<float,4> coords,
   torch::PackedTensorAccessor32<float,4> valid)
 {
@@ -376,8 +376,8 @@ std::vector<torch::Tensor> projmap_cpu(
     poses.packed_accessor32<float,2>(),
     disps.packed_accessor32<float,3>(),
     intrinsics.packed_accessor32<float,1>(),
-    ii.packed_accessor32<long,1>(),
-    jj.packed_accessor32<long,1>(),
+    ii.packed_accessor32<int,1>(),
+    jj.packed_accessor32<int,1>(),
     coords.packed_accessor32<float,4>(),
     valid.packed_accessor32<float,4>());
 
@@ -390,8 +390,8 @@ void frame_distance_kernel(
   const torch::PackedTensorAccessor32<float,2> poses,
   const torch::PackedTensorAccessor32<float,3> disps,
   const torch::PackedTensorAccessor32<float,1> intrinsics,
-  const torch::PackedTensorAccessor32<long,1> ii,
-  const torch::PackedTensorAccessor32<long,1> jj,
+  const torch::PackedTensorAccessor32<int,1> ii,
+  const torch::PackedTensorAccessor32<int,1> jj,
   torch::PackedTensorAccessor32<float,1> dist,
   const float beta)
 {
@@ -486,8 +486,8 @@ torch::Tensor frame_distance_cpu(
     poses.packed_accessor32<float,2>(),
     disps.packed_accessor32<float,3>(),
     intrinsics.packed_accessor32<float,1>(),
-    ii.packed_accessor32<long,1>(),
-    jj.packed_accessor32<long,1>(),
+    ii.packed_accessor32<int,1>(),
+    jj.packed_accessor32<int,1>(),
     dist.packed_accessor32<float,1>(), beta);
 
   return dist;
@@ -499,7 +499,7 @@ void depth_filter_kernel(
   const torch::PackedTensorAccessor32<float,2> poses,
   const torch::PackedTensorAccessor32<float,3> disps,
   const torch::PackedTensorAccessor32<float,1> intrinsics,
-  const torch::PackedTensorAccessor32<long,1> inds,
+  const torch::PackedTensorAccessor32<int,1> inds,
   const torch::PackedTensorAccessor32<float,1> thresh,
   torch::PackedTensorAccessor32<float,3> counter)
 {
@@ -590,7 +590,7 @@ torch::Tensor depth_filter_cpu(
     poses.packed_accessor32<float,2>(),
     disps.packed_accessor32<float,3>(),
     intrinsics.packed_accessor32<float,1>(),
-    ix.packed_accessor32<long,1>(),
+    ix.packed_accessor32<int,1>(),
     thresh.packed_accessor32<float,1>(),
     counter.packed_accessor32<float,3>());
 
@@ -669,8 +669,8 @@ torch::Tensor iproj_cpu(
 
 void accum_kernel(
   const torch::PackedTensorAccessor32<float,2> inps,
-  const torch::PackedTensorAccessor32<long,1> ptrs,
-  const torch::PackedTensorAccessor32<long,1> idxs,
+  const torch::PackedTensorAccessor32<int,1> ptrs,
+  const torch::PackedTensorAccessor32<int,1> idxs,
   torch::PackedTensorAccessor32<float,2> outs)
 {
   int count=ptrs.size(0)-1;
@@ -699,8 +699,8 @@ torch::Tensor accum_cpu(
   torch::Tensor out = torch::zeros({count,inps.size(1)},inps.options());
   accum_kernel(
     inps.packed_accessor32<float,2>(),
-    ptrs.packed_accessor32<long,1>(),
-    idxs.packed_accessor32<long,1>(),
+    ptrs.packed_accessor32<int,1>(),
+    idxs.packed_accessor32<int,1>(),
     out.packed_accessor32<float,2>());
   return out;
 }
@@ -738,7 +738,7 @@ void pose_retr_cpu(
 void disp_retr_kernel(
   torch::PackedTensorAccessor32<float,3> disps,
   const torch::PackedTensorAccessor32<float,2> dz,
-  const torch::PackedTensorAccessor32<long,1> inds)
+  const torch::PackedTensorAccessor32<int,1> inds)
 {
   for(int block_id=0;block_id<inds.size(0);block_id++)
   {
@@ -765,13 +765,13 @@ void disp_retr_cpu(
   disp_retr_kernel(
     disps.packed_accessor32<float,3>(),
     dz.packed_accessor32<float,2>(),
-    inds.packed_accessor32<long,1>());
+    inds.packed_accessor32<int,1>());
 }
 
 void EEt6x6_kernel(
     const torch::PackedTensorAccessor32<float,3> E,
     const torch::PackedTensorAccessor32<float,2> Q,
-    const torch::PackedTensorAccessor32<long,2> idx,
+    const torch::PackedTensorAccessor32<int,2> idx,
     torch::PackedTensorAccessor32<float,3> S)
 {
   for(int block_id=0;block_id<idx.size(0);block_id++)
@@ -824,7 +824,7 @@ void EEt6x6_cpu(
   EEt6x6_kernel(
     E.packed_accessor32<float,3>(),
     Q.packed_accessor32<float,2>(),
-    idx.packed_accessor32<long,2>(),
+    idx.packed_accessor32<int,2>(),
     S.packed_accessor32<float,3>());
 }
 
@@ -832,7 +832,7 @@ void Ev6x1_kernel(
     const torch::PackedTensorAccessor32<float,3> E,
     const torch::PackedTensorAccessor32<float,2> Q,
     const torch::PackedTensorAccessor32<float,2> w,
-    const torch::PackedTensorAccessor32<long,2> idx,
+    const torch::PackedTensorAccessor32<int,2> idx,
     torch::PackedTensorAccessor32<float,2> v)
 {
   for(int block_id=0;block_id<idx.size(0);block_id++)
@@ -868,14 +868,14 @@ void Ev6x1_cpu(
     E.packed_accessor32<float,3>(),
     Q.packed_accessor32<float,2>(),
     w.packed_accessor32<float,2>(),
-    idx.packed_accessor32<long,2>(),
+    idx.packed_accessor32<int,2>(),
     v.packed_accessor32<float,2>());
 }
 
 void EvT6x1_kernel(
   const torch::PackedTensorAccessor32<float,3> E,
   const torch::PackedTensorAccessor32<float,2> x,
-  const torch::PackedTensorAccessor32<long,1> idx,
+  const torch::PackedTensorAccessor32<int,1> idx,
   torch::PackedTensorAccessor32<float,2> w)
 {
   for(int block_id=0;block_id<idx.size(0);block_id++)
@@ -906,6 +906,6 @@ void EvT6x1_cpu(
   EvT6x1_kernel(
     E.packed_accessor32<float,3>(),
     x.packed_accessor32<float,2>(),
-    idx.packed_accessor32<long,1>(),
+    idx.packed_accessor32<int,1>(),
     w.packed_accessor32<float,2>());
 }

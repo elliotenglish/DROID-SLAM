@@ -9,8 +9,14 @@
 #include "debug_utilities.h"
 #include "droid_kernels.h"
 
+#define LOG1(s0) std::cout << s0 << std::endl;
+#define LOG2(s0,s1) std::cout << s0 << " " << s1 << std::endl;
+#define LOG_FUNCTION() LOG2("function:",__PRETTY_FUNCTION__); LOG2("file:",__FILE__); LOG2("line:",__LINE__);
+#define LOG_TENSOR(x) LOG2(#x,x.toString());
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
-#define CHECK_INPUT(x) CHECK_CONTIGUOUS(x)
+#define CHECK_INPUT(x) \
+  LOG_TENSOR(x); \
+  CHECK_CONTIGUOUS(x);
 
 // std::vector<torch::Tensor> ba(
 //     torch::Tensor poses,
@@ -58,7 +64,7 @@ torch::Tensor frame_distance(
     torch::Tensor ii,
     torch::Tensor jj,
     const float beta) {
-
+  LOG_FUNCTION();
   CHECK_INPUT(poses);
   CHECK_INPUT(disps);
   CHECK_INPUT(intrinsics);
@@ -83,7 +89,6 @@ std::vector<torch::Tensor> projmap(
     torch::Tensor intrinsics,
     torch::Tensor ii,
     torch::Tensor jj) {
-
   CHECK_INPUT(poses);
   CHECK_INPUT(disps);
   CHECK_INPUT(intrinsics);
@@ -127,6 +132,7 @@ std::vector<torch::Tensor> corr_index_forward(
     torch::Tensor volume,
     torch::Tensor coords,
     int radius) {
+  LOG_FUNCTION();
   CHECK_INPUT(volume);
   CHECK_INPUT(coords);
 
@@ -146,6 +152,7 @@ std::vector<torch::Tensor> corr_index_backward(
     torch::Tensor coords,
     torch::Tensor corr_grad,
     int radius) {
+  LOG_FUNCTION();
   CHECK_INPUT(volume);
   CHECK_INPUT(coords);
   CHECK_INPUT(corr_grad);
@@ -164,6 +171,7 @@ std::vector<torch::Tensor> altcorr_forward(
     torch::Tensor fmap2,
     torch::Tensor coords,
     int radius) {
+  LOG_FUNCTION();
   CHECK_INPUT(fmap1);
   CHECK_INPUT(fmap2);
   CHECK_INPUT(coords);
@@ -182,6 +190,7 @@ std::vector<torch::Tensor> altcorr_backward(
     torch::Tensor coords,
     torch::Tensor corr_grad,
     int radius) {
+  LOG_FUNCTION();
   CHECK_INPUT(fmap1);
   CHECK_INPUT(fmap2);
   CHECK_INPUT(coords);
@@ -202,6 +211,7 @@ torch::Tensor depth_filter(
   const torch::Tensor ix,
   const torch::Tensor thresh)
 {
+  LOG_FUNCTION();
   CHECK_INPUT(poses);
   CHECK_INPUT(disps);
   CHECK_INPUT(intrinsics);
@@ -234,6 +244,7 @@ void projective_transform(
   torch::Tensor& Cii,
   torch::Tensor& wi)
 {
+  LOG_FUNCTION();
   CHECK_INPUT(targets);
   CHECK_INPUT(weights);
   CHECK_INPUT(poses);
@@ -264,6 +275,10 @@ void pose_retr(
     const int t0,
     const int t1)
 {
+  LOG_FUNCTION();
+  CHECK_INPUT(poses);
+  CHECK_INPUT(dx);
+
 if (poses.device().type() == torch::DeviceType::CPU) {
     pose_retr_cpu(poses,dx,t0,t1);
   }
@@ -279,6 +294,11 @@ void disp_retr(
     const torch::Tensor dz,
     const torch::Tensor inds)
 {
+  LOG_FUNCTION();
+  CHECK_INPUT(disps);
+  CHECK_INPUT(dz);
+  CHECK_INPUT(inds);
+
 if (dz.device().type() == torch::DeviceType::CPU) {
     disp_retr_cpu(disps,dz,inds);
   }
@@ -297,6 +317,11 @@ torch::Tensor accum(
   const torch::Tensor& ptrs,
   const torch::Tensor& idxs)
 {
+  LOG_FUNCTION();
+  CHECK_INPUT(inps);
+  CHECK_INPUT(ptrs);
+  CHECK_INPUT(idxs);
+
   if (inps.device().type() == torch::DeviceType::CPU) {
     return accum_cpu(inps,ptrs,idxs);
   }
@@ -314,6 +339,12 @@ void EEt6x6(
     const torch::Tensor idx,
     torch::Tensor S)
 {
+  LOG_FUNCTION();
+  CHECK_INPUT(E);
+  CHECK_INPUT(Q);
+  CHECK_INPUT(idx);
+  CHECK_INPUT(S);
+
   if (E.device().type() == torch::DeviceType::CPU) {
     EEt6x6_cpu(E,Q,idx,S);
     return;
@@ -334,6 +365,12 @@ void Ev6x1(
     const torch::Tensor idx,
     torch::Tensor v)
 {
+  LOG_FUNCTION();
+  CHECK_INPUT(E);
+  CHECK_INPUT(Q);
+  CHECK_INPUT(w);
+  CHECK_INPUT(idx);
+
   if (E.device().type() == torch::DeviceType::CPU) {
     Ev6x1_cpu(E,Q,w,idx,v);
     return;
@@ -353,6 +390,11 @@ void EvT6x1(
   const torch::Tensor idx,
   torch::Tensor w)
 {
+  LOG_FUNCTION();
+  CHECK_INPUT(E);
+  CHECK_INPUT(x);
+  CHECK_INPUT(idx);
+
   if (E.device().type() == torch::DeviceType::CPU) {
     EvT6x1_cpu(E,x,idx,w);
     return;
@@ -371,21 +413,27 @@ torch::Tensor accum2(
   const torch::Tensor ix,
   const torch::Tensor jx)
 {
+  LOG_FUNCTION();
+  CHECK_INPUT(data);
+  CHECK_INPUT(ix);
+  CHECK_INPUT(jx);
+
   torch::Tensor ix_cpu = ix.to(torch::kCPU);
   torch::Tensor jx_cpu = jx.to(torch::kCPU);
-  torch::Tensor inds = torch::argsort(ix_cpu);
+  torch::Tensor inds = torch::argsort(ix_cpu).to(torch::kInt32);
+  CHECK_INPUT(inds);
 
-  long* ix_data = ix_cpu.data_ptr<long>();
-  long* jx_data = jx_cpu.data_ptr<long>();
-  long* kx_data = inds.data_ptr<long>();
+  int* ix_data = ix_cpu.data_ptr<int>();
+  int* jx_data = jx_cpu.data_ptr<int>();
+  int* kx_data = inds.data_ptr<int>();
 
   int count = jx.size(0);
   std::vector<int> cols;
 
   torch::Tensor ptrs_cpu = torch::zeros({count+1}, 
-    torch::TensorOptions().dtype(torch::kInt64));
+    torch::TensorOptions().dtype(torch::kInt32));
   
-  long* ptrs_data = ptrs_cpu.data_ptr<long>();
+  int* ptrs_data = ptrs_cpu.data_ptr<int>();
   ptrs_data[0] = 0;
 
   int i = 0;
@@ -398,10 +446,10 @@ torch::Tensor accum2(
     ptrs_data[j+1] = cols.size();
   }
 
-  torch::Tensor idxs_cpu = torch::zeros({long(cols.size())}, 
-    torch::TensorOptions().dtype(torch::kInt64));
+  torch::Tensor idxs_cpu = torch::zeros({int(cols.size())}, 
+    torch::TensorOptions().dtype(torch::kInt32));
 
-  long* idxs_data = idxs_cpu.data_ptr<long>();
+  int* idxs_data = idxs_cpu.data_ptr<int>();
 
   for (unsigned int i=0; i<cols.size(); i++) {
     idxs_data[i] = cols[i];
@@ -435,14 +483,18 @@ class SparseBlock {
         int N, int M) : A(A), b(b), N(N), M(M) {}
 
     void update_lhs(torch::Tensor As, torch::Tensor ii, torch::Tensor jj) {
+      LOG_FUNCTION();
+      CHECK_INPUT(As);
+      CHECK_INPUT(ii);
+      CHECK_INPUT(jj);
 
       auto As_cpu = As.to(torch::kCPU).to(torch::kFloat64);
-      auto ii_cpu = ii.to(torch::kCPU).to(torch::kInt64);
-      auto jj_cpu = jj.to(torch::kCPU).to(torch::kInt64);
+      auto ii_cpu = ii.to(torch::kCPU).to(torch::kInt32);
+      auto jj_cpu = jj.to(torch::kCPU).to(torch::kInt32);
 
       auto As_acc = As_cpu.accessor<double,3>();
-      auto ii_acc = ii_cpu.accessor<long,1>();
-      auto jj_acc = jj_cpu.accessor<long,1>();
+      auto ii_acc = ii_cpu.accessor<int,1>();
+      auto jj_acc = jj_cpu.accessor<int,1>();
 
       std::vector<T> tripletList;
       for (int n=0; n<ii.size(0); n++) {
@@ -462,11 +514,15 @@ class SparseBlock {
     }
 
     void update_rhs(torch::Tensor bs, torch::Tensor ii) {
+      LOG_FUNCTION();
+      CHECK_INPUT(bs);
+      CHECK_INPUT(ii);
+
       auto bs_cpu = bs.to(torch::kCPU).to(torch::kFloat64);
-      auto ii_cpu = ii.to(torch::kCPU).to(torch::kInt64);
+      auto ii_cpu = ii.to(torch::kCPU).to(torch::kInt32);
 
       auto bs_acc = bs_cpu.accessor<double,2>();
-      auto ii_acc = ii_cpu.accessor<long,1>();
+      auto ii_acc = ii_cpu.accessor<int,1>();
 
       for (int n=0; n<ii.size(0); n++) {
         const int i = ii_acc[n];
@@ -532,17 +588,25 @@ SparseBlock schur_block(torch::Tensor E,
                         const int t0,
                         const int t1)
 {
+  LOG_FUNCTION();
+  CHECK_INPUT(E);
+  CHECK_INPUT(Q);
+  CHECK_INPUT(w);
+  CHECK_INPUT(ii);
+  CHECK_INPUT(jj);
+  CHECK_INPUT(kk);
+
   torch::Tensor ii_cpu = ii.to(torch::kCPU);
   torch::Tensor jj_cpu = jj.to(torch::kCPU);
   torch::Tensor kk_cpu = kk.to(torch::kCPU);
 
   const int P = t1 - t0;
-  //const long* ii_data = ii_cpu.data_ptr<long>();
-  const long* jj_data = jj_cpu.data_ptr<long>();
-  const long* kk_data = kk_cpu.data_ptr<long>();
+  //const int* ii_data = ii_cpu.data_ptr<int>();
+  const int* jj_data = jj_cpu.data_ptr<int>();
+  const int* kk_data = kk_cpu.data_ptr<int>();
 
-  std::vector<std::vector<long>> graph(P);
-  std::vector<std::vector<long>> index(P);
+  std::vector<std::vector<int>> graph(P);
+  std::vector<std::vector<int>> index(P);
 
   for (int n=0; n<ii_cpu.size(0); n++) {
     const int j = jj_data[n];
@@ -555,9 +619,9 @@ SparseBlock schur_block(torch::Tensor E,
     }
   }
 
-  std::vector<long> ii_list, jj_list, idx, jdx;
+  std::vector<int> ii_list, jj_list, idx, jdx;
 
-  typedef std::vector<long>::size_type TI;
+  typedef std::vector<int>::size_type TI;
   for (int i=0; i<P; i++) {
     for (int j=0; j<P; j++) {
       for (TI k=0; k < graph[i].size(); k++) {
@@ -575,17 +639,17 @@ SparseBlock schur_block(torch::Tensor E,
     }
   }
 
-  torch::Tensor ix_dev = torch::from_blob(idx.data(), {long(idx.size())}, 
-    torch::TensorOptions().dtype(torch::kInt64)).to(E.device().type()).view({-1, 3});
+  torch::Tensor ix_dev = torch::from_blob(idx.data(), {int(idx.size())}, 
+    torch::TensorOptions().dtype(torch::kInt32)).to(E.device().type()).view({-1, 3});
 
   torch::Tensor jx_dev = torch::stack({kk_cpu}, -1)
-    .to(E.device()).to(torch::kInt64);
+    .to(E.device()).to(torch::kInt32);
 
-  torch::Tensor ii2_cpu = torch::from_blob(ii_list.data(), {long(ii_list.size())}, 
-    torch::TensorOptions().dtype(torch::kInt64)).view({-1});
+  torch::Tensor ii2_cpu = torch::from_blob(ii_list.data(), {int(ii_list.size())}, 
+    torch::TensorOptions().dtype(torch::kInt32)).view({-1});
 
-  torch::Tensor jj2_cpu = torch::from_blob(jj_list.data(), {long(jj_list.size())}, 
-    torch::TensorOptions().dtype(torch::kInt64)).view({-1});
+  torch::Tensor jj2_cpu = torch::from_blob(jj_list.data(), {int(jj_list.size())}, 
+    torch::TensorOptions().dtype(torch::kInt32)).view({-1});
 
   torch::Tensor S = torch::zeros({ix_dev.size(0), 6, 6}, 
     torch::TensorOptions().dtype(torch::kFloat32).device(E.device().type()));
@@ -625,6 +689,7 @@ std::vector<torch::Tensor> ba(
     const float ep,
     const bool motion_only)
 {
+  LOG_FUNCTION();
   CHECK_INPUT(targets);
   CHECK_INPUT(weights);
   CHECK_INPUT(poses);
@@ -642,15 +707,22 @@ std::vector<torch::Tensor> ba(
   const int ht = disps.size(1);
   const int wd = disps.size(2);
 
-  torch::Tensor ts = torch::arange(t0, t1).to(poses.device().type());
+  torch::Tensor ts = torch::arange(t0, t1, torch::kInt32).to(poses.device().type());
   torch::Tensor ii_exp = torch::cat({ts, ii}, 0);
   torch::Tensor jj_exp = torch::cat({ts, jj}, 0);
+
+  CHECK_INPUT(ts);
+  CHECK_INPUT(ii_exp);
+  CHECK_INPUT(jj_exp);
 
   std::tuple<torch::Tensor, torch::Tensor> kuniq = 
     torch::_unique(ii_exp, true, true);
 
-  torch::Tensor kx = std::get<0>(kuniq);
-  torch::Tensor kk_exp = std::get<1>(kuniq);
+  torch::Tensor kx = std::get<0>(kuniq).to(torch::kInt32);
+  torch::Tensor kk_exp = std::get<1>(kuniq).to(torch::kInt32);
+
+  CHECK_INPUT(kx);
+  CHECK_INPUT(kk_exp);
     
   torch::Tensor dx;
   torch::Tensor dz;

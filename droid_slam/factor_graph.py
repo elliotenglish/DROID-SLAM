@@ -2,7 +2,7 @@ import torch
 import lietorch
 import numpy as np
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from lietorch import SE3
 from .modules.corr import CorrBlock, AltCorrBlock
 from .geom import projective_ops as pops
@@ -22,9 +22,9 @@ class FactorGraph:
         self.wd = wd = video.wd // 8
 
         self.coords0 = pops.coords_grid(ht, wd, device=device)
-        self.ii = torch.as_tensor([], dtype=torch.long, device=device)
-        self.jj = torch.as_tensor([], dtype=torch.long, device=device)
-        self.age = torch.as_tensor([], dtype=torch.long, device=device)
+        self.ii = torch.as_tensor([], dtype=torch.int, device=device)
+        self.jj = torch.as_tensor([], dtype=torch.int, device=device)
+        self.age = torch.as_tensor([], dtype=torch.int, device=device)
 
         self.corr, self.net, self.inp = None, None, None
         self.damping = 1e-6 * torch.ones_like(self.video.disps)
@@ -33,10 +33,10 @@ class FactorGraph:
         self.weight = torch.zeros([1, 0, ht, wd, 2], device=device, dtype=torch.float)
 
         # inactive factors
-        self.ii_inac = torch.as_tensor([], dtype=torch.long, device=device)
-        self.jj_inac = torch.as_tensor([], dtype=torch.long, device=device)
-        self.ii_bad = torch.as_tensor([], dtype=torch.long, device=device)
-        self.jj_bad = torch.as_tensor([], dtype=torch.long, device=device)
+        self.ii_inac = torch.as_tensor([], dtype=torch.int, device=device)
+        self.jj_inac = torch.as_tensor([], dtype=torch.int, device=device)
+        self.ii_bad = torch.as_tensor([], dtype=torch.int, device=device)
+        self.jj_bad = torch.as_tensor([], dtype=torch.int, device=device)
 
         self.target_inac = torch.zeros([1, 0, ht, wd, 2], device=device, dtype=torch.float)
         self.weight_inac = torch.zeros([1, 0, ht, wd, 2], device=device, dtype=torch.float)
@@ -87,10 +87,10 @@ class FactorGraph:
         """ add edges to factor graph """
 
         if not isinstance(ii, torch.Tensor):
-            ii = torch.as_tensor(ii, dtype=torch.long, device=self.device)
+            ii = torch.as_tensor(ii, dtype=torch.int, device=self.device)
 
         if not isinstance(jj, torch.Tensor):
-            jj = torch.as_tensor(jj, dtype=torch.long, device=self.device)
+            jj = torch.as_tensor(jj, dtype=torch.int, device=self.device)
 
         # remove duplicate edges
         ii, jj = self.__filter_repeated_edges(ii, jj)
@@ -110,7 +110,7 @@ class FactorGraph:
 
         # correlation volume for new edges
         if self.corr_impl == "volume":
-            c = (ii == jj).long()
+            c = (ii == jj).int()
             fmap1 = self.video.fmaps[ii,0].to(self.device).unsqueeze(0)
             fmap2 = self.video.fmaps[jj,c].to(self.device).unsqueeze(0)
             corr = CorrBlock(fmap1, fmap2)
@@ -276,7 +276,7 @@ class FactorGraph:
                 jjs = self.jj[v]
 
                 ht, wd = self.coords0.shape[0:2]
-                corr1 = corr_op(coords1[:,v], rig * iis, rig * jjs + (iis == jjs).long())
+                corr1 = corr_op(coords1[:,v], rig * iis, rig * jjs + (iis == jjs).int())
 
                 #with torch.cuda.amp.autocast(enabled=True):
                 if True:
@@ -305,8 +305,8 @@ class FactorGraph:
         """ add edges between neighboring frames within radius r """
 
         ii, jj = torch.meshgrid(torch.arange(t0,t1), torch.arange(t0,t1))
-        ii = ii.reshape(-1).to(dtype=torch.long, device=self.device)
-        jj = jj.reshape(-1).to(dtype=torch.long, device=self.device)
+        ii = ii.reshape(-1).to(dtype=torch.int, device=self.device)
+        jj = jj.reshape(-1).to(dtype=torch.int, device=self.device)
 
         c = 1 if self.video.stereo else 0
 

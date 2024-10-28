@@ -4,8 +4,9 @@ from cyborg.utilities.portable_extension import PortableExtension,BuildExtension
 import os.path as osp
 ROOT = osp.dirname(osp.abspath(__file__))
 
-#compile_flags=["-g","-O0"]
-compile_flags=["-O3"]
+compile_flags=["-glldb","-O0","-UNDEBUG"]
+#compile_flags=["-O3"]
+link_flags=["-glldb","-O0"]#"-Wl,--no-as-needed",
 
 setup(
     name='droid_slam',
@@ -34,7 +35,8 @@ setup(
                     #'-gencode=arch=compute_80,code=sm_80',
                     '-gencode=arch=compute_86,code=sm_86',
                 ]
-            }),
+            },
+            extra_link_args=link_flags)
     ],
     cmdclass={ 'build_ext' : BuildExtension }
 )

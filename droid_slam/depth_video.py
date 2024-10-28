@@ -109,7 +109,7 @@ class DepthVideo:
     ### geometric operations ###
 
     def format_indicies(self, ii, jj):
-        """ to device, long, {-1} """
+        """ to device, int, {-1} """
 
         if not isinstance(ii, torch.Tensor):
             ii = torch.as_tensor(ii)
@@ -117,8 +117,8 @@ class DepthVideo:
         if not isinstance(jj, torch.Tensor):
             jj = torch.as_tensor(jj)
 
-        ii = ii.to(device=self.device, dtype=torch.long).reshape(-1)
-        jj = jj.to(device=self.device, dtype=torch.long).reshape(-1)
+        ii = ii.to(device=self.device, dtype=torch.int).reshape(-1)
+        jj = jj.to(device=self.device, dtype=torch.int).reshape(-1)
 
         return ii, jj
 
