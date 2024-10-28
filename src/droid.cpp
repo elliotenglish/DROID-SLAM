@@ -10,8 +10,12 @@
 #include "debug_utilities.h"
 #include "droid_kernels.h"
 
-#define LOG1(s0) std::cout << s0 << std::endl;
-#define LOG2(s0,s1) std::cout << s0 << " " << s1 << std::endl;
+/////////////////////////////////////////////////////////////////////////
+// Use the former lines to add debugging instrumentation.
+// #define LOG1(s0) std::cout << s0 << std::endl;
+// #define LOG2(s0,s1) std::cout << s0 << " " << s1 << std::endl;
+#define LOG1(s0)
+#define LOG2(s0,s1)
 #define LOG_FUNCTION() LOG2("function:",__PRETTY_FUNCTION__); LOG2("file:",__FILE__); LOG2("line:",__LINE__);
 #define LOG_TENSOR(x) LOG2(#x,x.toString());
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
