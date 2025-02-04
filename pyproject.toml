@@ -1,0 +1,7 @@
+[build-system]
+requires = [
+  "pybind11",
+  "setuptools",
+  "torch",
+  "numpy<2.0"
+]

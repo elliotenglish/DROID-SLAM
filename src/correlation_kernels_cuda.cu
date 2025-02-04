@@ -10,11 +10,11 @@
 #include <ATen/NativeFunctions.h>
 #include <ATen/Parallel.h>
 
-#define BLOCK 16
+#include "correlation_kernels_cuda.h"
+#include "cuda_utilities.h"
+#include "array_utilities.h"
 
-__forceinline__ __device__ bool within_bounds(int h, int w, int H, int W) {
-  return h >= 0 && h < H && w >= 0 && w < W;
-}
+#define BLOCK 16
 
 template <typename scalar_t>
 __global__ void corr_index_forward_kernel(
@@ -33,15 +33,32 @@ __global__ void corr_index_forward_kernel(
   const int h2 = volume.size(3);
   const int w2 = volume.size(4);
 
+  // if (y!=2 || x!=0 || n!=0)
+  //   return;
+
+  // printf("blah n=%d x=%d y=%d w1=%d h1=%d wb=%d\n",n,x,y,w1,h1,within_bounds(y, x, h1, w1));
+  // printf("coords s=(%d,%d,%d,%d)\n",coords.size(0),coords.size(1),coords.size(2),coords.size(3));
+
   if (!within_bounds(y, x, h1, w1)) {
     return;
   }
 
+  // printf("test\n");
+  // printf("test3\n");
+
+  // float xyz=coords[0][0][0][0];
+  // printf("test4 n=%d y=%d x=%d\n",n,y,x);
+
   float x0 = coords[n][0][y][x];
   float y0 = coords[n][1][y][x];
 
+  // printf("test2\n");
+
   float dx = x0 - floor(x0);
   float dy = y0 - floor(y0);
+
+  // printf("test1\n");
+  // printf("x=%d y=%d x0=%g y0=%g dx=%g dy=%g\n",x,y,x0,y0,dx,dy);
 
   int rd = 2*r + 1;
   for (int i=0; i<rd+1; i++) {
@@ -51,6 +68,7 @@ __global__ void corr_index_forward_kernel(
 
       if (within_bounds(y1, x1, h2, w2)) {
         scalar_t s = volume[n][y][x][y1][x1];
+        // printf("s=%g\n",s);
 
         if (i > 0 && j > 0)
           corr[n][i-1][j-1][y][x] += s * scalar_t(dx * dy);
@@ -142,7 +160,7 @@ std::vector<torch::Tensor> corr_index_cuda_forward(
   torch::Tensor corr = torch::zeros(
     {batch_size, 2*radius+1, 2*radius+1, ht, wd}, opts);
 
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(volume.type(), "sampler_forward_kernel", ([&] {
+  AT_DISPATCH_FLOATING_TYPES_AND_HALF(volume.scalar_type(), "sampler_forward_kernel", ([&] {
     corr_index_forward_kernel<scalar_t><<<blocks, threads>>>(
       volume.packed_accessor32<scalar_t,5,torch::RestrictPtrTraits>(),
       coords.packed_accessor32<float,4,torch::RestrictPtrTraits>(),
@@ -150,8 +168,10 @@ std::vector<torch::Tensor> corr_index_cuda_forward(
       radius);
    }));
 
-  return {corr};
+  cudaDeviceSynchronize();
+  cudaCheckError();
 
+  return {corr};
 }
 
 std::vector<torch::Tensor> corr_index_cuda_backward(
@@ -173,13 +193,16 @@ std::vector<torch::Tensor> corr_index_cuda_backward(
   const dim3 threads(BLOCK, BLOCK);
 
 
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(volume.type(), "sampler_backward_kernel", ([&] {
+  AT_DISPATCH_FLOATING_TYPES_AND_HALF(volume.scalar_type(), "sampler_backward_kernel", ([&] {
     corr_index_backward_kernel<scalar_t><<<blocks, threads>>>(
       coords.packed_accessor32<float,4,torch::RestrictPtrTraits>(),
       corr_grad.packed_accessor32<scalar_t,5,torch::RestrictPtrTraits>(),
       volume_grad.packed_accessor32<scalar_t,5,torch::RestrictPtrTraits>(),
       radius);
    }));
+
+  cudaDeviceSynchronize();
+  cudaCheckError();
 
   return {volume_grad};
 }

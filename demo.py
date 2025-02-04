@@ -12,7 +12,7 @@ import time
 import argparse
 
 from torch.multiprocessing import Process
-from droid import Droid
+from droid_slam.droid import Droid
 
 import torch.nn.functional as F
 
@@ -38,12 +38,15 @@ def image_stream(imagedir, calib, stride):
 
     for t, imfile in enumerate(image_list):
         image = cv2.imread(os.path.join(imagedir, imfile))
+        print(t,imfile,image.sum())
         if len(calib) > 4:
             image = cv2.undistort(image, K, calib[4:])
+        print(image.sum())
 
         h0, w0, _ = image.shape
         h1 = int(h0 * np.sqrt((384 * 512) / (h0 * w0)))
         w1 = int(w0 * np.sqrt((384 * 512) / (h0 * w0)))
+        #print(h0,w0,h1,w1)
 
         image = cv2.resize(image, (w1, h1))
         image = image[:h1-h1%8, :w1-w1%8]
@@ -82,7 +85,9 @@ if __name__ == '__main__':
     parser.add_argument("--imagedir", type=str, help="path to image directory")
     parser.add_argument("--calib", type=str, help="path to calibration file")
     parser.add_argument("--t0", default=0, type=int, help="starting frame")
+    parser.add_argument("--t1", default=None, type=int, help="ending frame")
     parser.add_argument("--stride", default=3, type=int, help="frame stride")
+    parser.add_argument("--device",default="cuda")
 
     parser.add_argument("--weights", default="droid.pth")
     parser.add_argument("--buffer", type=int, default=512)
@@ -118,14 +123,20 @@ if __name__ == '__main__':
     for (t, image, intrinsics) in tqdm(image_stream(args.imagedir, args.calib, args.stride)):
         if t < args.t0:
             continue
+        if args.t1 is not None and t > args.t1:
+            break
+
+        print(f"processing index={t} time={t} frame={image.shape},{image.numpy().sum()} intrinsics={intrinsics}")
 
         if not args.disable_vis:
             show_image(image[0])
 
         if droid is None:
             args.image_size = [image.shape[2], image.shape[3]]
+            print(f"args=\n{args}")
             droid = Droid(args)
-        
+
+        print(f"time={t} image={image.shape} ")
         droid.track(t, image, intrinsics=intrinsics)
 
     if args.reconstruction_path is not None:

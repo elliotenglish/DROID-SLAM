@@ -4,7 +4,7 @@ import os.path as osp
 import torch
 from lietorch import SE3
 
-import geom.projective_ops as pops
+from ..geom import projective_ops as pops
 from scipy.spatial.transform import Rotation
 
 
@@ -105,17 +105,17 @@ def pose_matrix_to_quaternion(pose):
 def compute_distance_matrix_flow(poses, disps, intrinsics):
     """ compute flow magnitude between all pairs of frames """
     if not isinstance(poses, SE3):
-        poses = torch.from_numpy(poses).float().cuda()[None]
+        poses = torch.from_numpy(poses).float()[None]
         poses = SE3(poses).inv()
 
-        disps = torch.from_numpy(disps).float().cuda()[None]
-        intrinsics = torch.from_numpy(intrinsics).float().cuda()[None]
+        disps = torch.from_numpy(disps).float()[None]
+        intrinsics = torch.from_numpy(intrinsics).float()[None]
 
     N = poses.shape[1]
     
     ii, jj = torch.meshgrid(torch.arange(N), torch.arange(N))
-    ii = ii.reshape(-1).cuda()
-    jj = jj.reshape(-1).cuda()
+    ii = ii.reshape(-1)
+    jj = jj.reshape(-1)
 
     MAX_FLOW = 100.0
     matrix = np.zeros((N, N), dtype=np.float32)
@@ -145,11 +145,11 @@ def compute_distance_matrix_flow(poses, disps, intrinsics):
 def compute_distance_matrix_flow2(poses, disps, intrinsics, beta=0.4):
     """ compute flow magnitude between all pairs of frames """
     # if not isinstance(poses, SE3):
-    #     poses = torch.from_numpy(poses).float().cuda()[None]
+    #     poses = torch.from_numpy(poses).float()[None]
     #     poses = SE3(poses).inv()
 
-    #     disps = torch.from_numpy(disps).float().cuda()[None]
-    #     intrinsics = torch.from_numpy(intrinsics).float().cuda()[None]
+    #     disps = torch.from_numpy(disps).float()[None]
+    #     intrinsics = torch.from_numpy(intrinsics).float()[None]
 
     N = poses.shape[1]
     

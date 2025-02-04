@@ -1,3 +1,11 @@
+# Updates:
+
+This is a modified version to support systems without Nvidia GPUs, and newer torch versions.
+
+Note that this also needs an updated version of lietorch available here:
+https://github.com/elliotenglish/lietorch
+
+
 # DROID-SLAM
 
 

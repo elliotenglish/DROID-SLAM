@@ -6,39 +6,43 @@ import droid_backends
 from torch.multiprocessing import Process, Queue, Lock, Value
 from collections import OrderedDict
 
-from droid_net import cvx_upsample
-import geom.projective_ops as pops
+from .droid_net import cvx_upsample
+from .geom import projective_ops as pops
+from .droid_kernels import IndexTypeTorch
 
 class DepthVideo:
-    def __init__(self, image_size=[480, 640], buffer=1024, stereo=False, device="cuda:0"):
+    def __init__(self, device, image_size=[480, 640], buffer=1024, stereo=False):
                 
         # current keyframe count
         self.counter = Value('i', 0)
         self.ready = Value('i', 0)
         self.ht = ht = image_size[0]
         self.wd = wd = image_size[1]
+        self.device=device
 
         ### state attributes ###
-        self.tstamp = torch.zeros(buffer, device="cuda", dtype=torch.float).share_memory_()
-        self.images = torch.zeros(buffer, 3, ht, wd, device="cuda", dtype=torch.uint8)
-        self.dirty = torch.zeros(buffer, device="cuda", dtype=torch.bool).share_memory_()
-        self.red = torch.zeros(buffer, device="cuda", dtype=torch.bool).share_memory_()
-        self.poses = torch.zeros(buffer, 7, device="cuda", dtype=torch.float).share_memory_()
-        self.disps = torch.ones(buffer, ht//8, wd//8, device="cuda", dtype=torch.float).share_memory_()
-        self.disps_sens = torch.zeros(buffer, ht//8, wd//8, device="cuda", dtype=torch.float).share_memory_()
-        self.disps_up = torch.zeros(buffer, ht, wd, device="cuda", dtype=torch.float).share_memory_()
-        self.intrinsics = torch.zeros(buffer, 4, device="cuda", dtype=torch.float).share_memory_()
+        self.tstamp = torch.zeros(buffer, device=device, dtype=torch.float).share_memory_()
+        self.images = torch.zeros(buffer, 3, ht, wd, device=device, dtype=torch.uint8)
+        self.dirty = torch.zeros(buffer, device=device, dtype=torch.bool).share_memory_()
+        self.red = torch.zeros(buffer, device=device, dtype=torch.bool).share_memory_()
+        self.poses = torch.zeros(buffer, 7, device=device, dtype=torch.float).share_memory_()
+        self.disps = torch.ones(buffer, ht//8, wd//8, device=device, dtype=torch.float).share_memory_()
+        self.disps_sens = torch.zeros(buffer, ht//8, wd//8, device=device, dtype=torch.float).share_memory_()
+        self.disps_up = torch.zeros(buffer, ht, wd, device=device, dtype=torch.float).share_memory_()
+        self.intrinsics = torch.zeros(buffer, 4, device=device, dtype=torch.float).share_memory_()
 
         self.stereo = stereo
         c = 1 if not self.stereo else 2
 
         ### feature attributes ###
-        self.fmaps = torch.zeros(buffer, c, 128, ht//8, wd//8, dtype=torch.half, device="cuda").share_memory_()
-        self.nets = torch.zeros(buffer, 128, ht//8, wd//8, dtype=torch.half, device="cuda").share_memory_()
-        self.inps = torch.zeros(buffer, 128, ht//8, wd//8, dtype=torch.half, device="cuda").share_memory_()
+        # data_type=torch.half
+        data_type=torch.float
+        self.fmaps = torch.zeros(buffer, c, 128, ht//8, wd//8, dtype=data_type, device=device).share_memory_()
+        self.nets = torch.zeros(buffer, 128, ht//8, wd//8, dtype=data_type, device=device).share_memory_()
+        self.inps = torch.zeros(buffer, 128, ht//8, wd//8, dtype=data_type, device=device).share_memory_()
 
         # initialize poses to identity transformation
-        self.poses[:] = torch.as_tensor([0, 0, 0, 0, 0, 0, 1], dtype=torch.float, device="cuda")
+        self.poses[:] = torch.as_tensor([0, 0, 0, 0, 0, 0, 1], dtype=torch.float, device=device)
         
     def get_lock(self):
         return self.counter.get_lock()
@@ -105,9 +109,8 @@ class DepthVideo:
 
     ### geometric operations ###
 
-    @staticmethod
-    def format_indicies(ii, jj):
-        """ to device, long, {-1} """
+    def format_indicies(self, ii, jj):
+        """ to device, int, {-1} """
 
         if not isinstance(ii, torch.Tensor):
             ii = torch.as_tensor(ii)
@@ -115,8 +118,8 @@ class DepthVideo:
         if not isinstance(jj, torch.Tensor):
             jj = torch.as_tensor(jj)
 
-        ii = ii.to(device="cuda", dtype=torch.long).reshape(-1)
-        jj = jj.to(device="cuda", dtype=torch.long).reshape(-1)
+        ii = ii.to(device=self.device, dtype=IndexTypeTorch).reshape(-1)
+        jj = jj.to(device=self.device, dtype=IndexTypeTorch).reshape(-1)
 
         return ii, jj
 
@@ -138,7 +141,7 @@ class DepthVideo:
 
     def reproject(self, ii, jj):
         """ project points from ii -> jj """
-        ii, jj = DepthVideo.format_indicies(ii, jj)
+        ii, jj = self.format_indicies(ii, jj)
         Gs = lietorch.SE3(self.poses[None])
 
         coords, valid_mask = \
@@ -155,23 +158,29 @@ class DepthVideo:
             N = self.counter.value
             ii, jj = torch.meshgrid(torch.arange(N), torch.arange(N))
         
-        ii, jj = DepthVideo.format_indicies(ii, jj)
+        ii, jj = self.format_indicies(ii, jj)
 
         if bidirectional:
 
             poses = self.poses[:self.counter.value].clone()
+            # print(f"poses={poses.sum()}")
 
             d1 = droid_backends.frame_distance(
                 poses, self.disps, self.intrinsics[0], ii, jj, beta)
+                # poses.cuda(), self.disps.cuda(), self.intrinsics[0].cuda(), ii.cuda(), jj.cuda(), beta).to(self.device)
 
             d2 = droid_backends.frame_distance(
                 poses, self.disps, self.intrinsics[0], jj, ii, beta)
+                # poses.cuda(), self.disps.cuda(), self.intrinsics[0].cuda(), jj.cuda(), ii.cuda(), beta).to(self.device)
+
+            # print(f"d1={d1.sum()} d2={d2.sum()}")
 
             d = .5 * (d1 + d2)
 
         else:
             d = droid_backends.frame_distance(
                 self.poses, self.disps, self.intrinsics[0], ii, jj, beta)
+                # self.poses.cuda(), self.disps.cuda(), self.intrinsics[0].cuda(), ii.cuda(), jj.cuda(), beta).to(self.device)
 
         if return_matrix:
             return d.reshape(N, N)
@@ -186,6 +195,13 @@ class DepthVideo:
             # [t0, t1] window of bundle adjustment optimization
             if t1 is None:
                 t1 = max(ii.max().item(), jj.max().item()) + 1
+
+            # poses0=self.poses.cuda()
+            # disps0=self.disps.cuda()
+            # droid_backends.ba(poses0, disps0, self.intrinsics[0].cuda(), self.disps_sens.cuda(),
+            #     target.cuda(), weight.cuda(), eta.cuda(), ii.cuda(), jj.cuda(), t0, t1, itrs, lm, ep, motion_only)
+            # self.poses.copy_(poses0)
+            # self.disps.copy_(disps0)
 
             droid_backends.ba(self.poses, self.disps, self.intrinsics[0], self.disps_sens,
                 target, weight, eta, ii, jj, t0, t1, itrs, lm, ep, motion_only)

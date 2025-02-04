@@ -1,61 +1,46 @@
 from setuptools import setup
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+from portable_extension import PortableExtension,BuildExtension,cuda_enabled
 
 import os.path as osp
 ROOT = osp.dirname(osp.abspath(__file__))
 
-setup(
-    name='droid_backends',
-    ext_modules=[
-        CUDAExtension('droid_backends',
-            include_dirs=[osp.join(ROOT, 'thirdparty/eigen')],
-            sources=[
-                'src/droid.cpp', 
-                'src/droid_kernels.cu',
-                'src/correlation_kernels.cu',
-                'src/altcorr_kernel.cu',
-            ],
-            extra_compile_args={
-                'cxx': ['-O3'],
-                'nvcc': ['-O3',
-                    '-gencode=arch=compute_60,code=sm_60',
-                    '-gencode=arch=compute_61,code=sm_61',
-                    '-gencode=arch=compute_70,code=sm_70',
-                    '-gencode=arch=compute_75,code=sm_75',
-                    '-gencode=arch=compute_80,code=sm_80',
-                    '-gencode=arch=compute_86,code=sm_86',
-                ]
-            }),
-    ],
-    cmdclass={ 'build_ext' : BuildExtension }
-)
+optimize=True
+if optimize:
+    compile_flags=["-O3","-std=c++17"]
+    link_flags=["-O3"]
+else:
+    compile_flags=["-g","-O0","-UNDEBUG","-std=c++17"]
+    link_flags=["-g","-O0"]#"-Wl,--no-as-needed",
 
 setup(
-    name='lietorch',
-    version='0.2',
-    description='Lie Groups for PyTorch',
-    packages=['lietorch'],
-    package_dir={'': 'thirdparty/lietorch'},
+    name='droid_slam',
+    packages=["droid_slam"],
     ext_modules=[
-        CUDAExtension('lietorch_backends', 
+        PortableExtension('droid_backends',
             include_dirs=[
-                osp.join(ROOT, 'thirdparty/lietorch/lietorch/include'), 
-                osp.join(ROOT, 'thirdparty/eigen')],
+              "/usr/include/eigen3",
+              "/usr/local/include/eigen3"],
             sources=[
-                'thirdparty/lietorch/lietorch/src/lietorch.cpp', 
-                'thirdparty/lietorch/lietorch/src/lietorch_gpu.cu',
-                'thirdparty/lietorch/lietorch/src/lietorch_cpu.cpp'],
+                'src/droid.cpp',
+                'src/droid_kernels_cpu.cc',
+                'src/droid_kernels_cuda.cu',
+                'src/correlation_kernels_cpu.cc',
+                'src/correlation_kernels_cuda.cu',
+                'src/altcorr_kernel.cu',
+                "src/debug_utilities.cc",
+            ],
             extra_compile_args={
-                'cxx': ['-O2'], 
-                'nvcc': ['-O2',
-                    '-gencode=arch=compute_60,code=sm_60', 
-                    '-gencode=arch=compute_61,code=sm_61', 
-                    '-gencode=arch=compute_70,code=sm_70', 
-                    '-gencode=arch=compute_75,code=sm_75',
-                    '-gencode=arch=compute_80,code=sm_80',
-                    '-gencode=arch=compute_86,code=sm_86',                 
+                'cxx': compile_flags,
+                'nvcc': compile_flags + [
+                    #'-gencode=arch=compute_60,code=sm_60',
+                    #'-gencode=arch=compute_61,code=sm_61',
+                    #'-gencode=arch=compute_70,code=sm_70',
+                    #'-gencode=arch=compute_75,code=sm_75',
+                    #'-gencode=arch=compute_80,code=sm_80',
+                    '-gencode=arch=compute_86,code=sm_86',
                 ]
-            }),
+            },
+            extra_link_args=link_flags)
     ],
     cmdclass={ 'build_ext' : BuildExtension }
 )

@@ -4,16 +4,17 @@ import torch.nn as nn
 import torch.nn.functional as F
 from collections import OrderedDict
 
-from modules.extractor import BasicEncoder
-from modules.corr import CorrBlock
-from modules.gru import ConvGRU
-from modules.clipping import GradientClip
+from .modules.extractor import BasicEncoder
+from .modules.corr import CorrBlock
+from .modules.gru import ConvGRU
+from .modules.clipping import GradientClip
 
 from lietorch import SE3
-from geom.ba import BA
+from .geom.ba import BA
 
-import geom.projective_ops as pops
-from geom.graph_utils import graph_to_edge_list, keyframe_indicies
+from .geom import projective_ops as pops
+from .geom.graph_utils import graph_to_edge_list, keyframe_indicies
+from .droid_kernels import IndexTypeTorch
 
 from torch_scatter import scatter_mean
 
@@ -171,12 +172,13 @@ class DroidNet(nn.Module):
 
     def forward(self, Gs, images, disps, intrinsics, graph=None, num_steps=12, fixedp=2):
         """ Estimates SE3 or Sim3 between pair of frames """
+        assert False, "Not used"
 
         u = keyframe_indicies(graph)
         ii, jj, kk = graph_to_edge_list(graph)
 
-        ii = ii.to(device=images.device, dtype=torch.long)
-        jj = jj.to(device=images.device, dtype=torch.long)
+        ii = ii.to(device=images.device, dtype=IndexTypeTorch)
+        jj = jj.to(device=images.device, dtype=IndexTypeTorch)
 
         fmaps, net, inp = self.extract_features(images)
         net, inp = net[:,ii], inp[:,ii]

@@ -95,6 +95,7 @@ def actp(Gij, X0, jacobian=False):
 
 def projective_transform(poses, depths, intrinsics, ii, jj, jacobian=False, return_depth=False):
     """ map points from ii->jj """
+    device=poses.device
 
     # inverse project (pinhole)
     X0, Jz = iproj(depths[:,ii], intrinsics[:,ii], jacobian=jacobian)
@@ -102,7 +103,7 @@ def projective_transform(poses, depths, intrinsics, ii, jj, jacobian=False, retu
     # transform
     Gij = poses[:,jj] * poses[:,ii].inv()
 
-    Gij.data[:,ii==jj] = torch.as_tensor([-0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0], device="cuda")
+    Gij.data[:,ii==jj] = torch.as_tensor([-0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0], device=device)
     X1, Ja = actp(Gij, X0, jacobian=jacobian)
     
     # project (pinhole)

@@ -6,9 +6,10 @@ import time
 import argparse
 import numpy as np
 import open3d as o3d
-
+import os
 from lietorch import SE3
-import geom.projective_ops as pops
+from .geom import projective_ops as pops
+from .droid_kernels import IndexTypeTorch
 
 CAM_POINTS = np.array([
         [ 0,   0,   0],
@@ -50,10 +51,11 @@ def create_point_actor(points, colors):
     point_cloud.colors = o3d.utility.Vector3dVector(colors)
     return point_cloud
 
-def droid_visualization(video, device="cuda:0"):
+def droid_visualization(video):
     """ DROID visualization frontend """
 
-    torch.cuda.set_device(device)
+    #device=video.device
+    #torch.cuda.set_device(device)
     droid_visualization.video = video
     droid_visualization.cameras = {}
     droid_visualization.points = {}
@@ -81,7 +83,7 @@ def droid_visualization(video, device="cuda:0"):
             with video.get_lock():
                 t = video.counter.value 
                 dirty_index, = torch.where(video.dirty.clone())
-                dirty_index = dirty_index
+                dirty_index = dirty_index.to(IndexTypeTorch)
 
             if len(dirty_index) == 0:
                 return
@@ -98,7 +100,9 @@ def droid_visualization(video, device="cuda:0"):
             points = droid_backends.iproj(SE3(poses).inv().data, disps, video.intrinsics[0]).cpu()
 
             thresh = droid_visualization.filter_thresh * torch.ones_like(disps.mean(dim=[1,2]))
-            
+
+            print(f"dirty_index={dirty_index.dtype}")
+
             count = droid_backends.depth_filter(
                 video.poses, video.disps, video.intrinsics[0], dirty_index, thresh)
 
@@ -148,7 +152,8 @@ def droid_visualization(video, device="cuda:0"):
     vis.register_key_callback(ord("A"), decrease_filter)
 
     vis.create_window(height=540, width=960)
-    vis.get_render_option().load_from_json("misc/renderoption.json")
+    vis.get_render_option().load_from_json(os.path.join(os.path.dirname(__file__),"../misc/renderoption.json"))
 
     vis.run()
+
     vis.destroy_window()
